@@ -6,14 +6,13 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const mongoose = require('mongoose');
 
-// --- ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ (ТВОЯ СТРОКА) ---
 const MONGO_URI = 'mongodb+srv://lol646564_db_user:ldX5Ta9z4tjIj1dK@cadelyfiles.wmgybw6.mongodb.net/?retryWrites=true&w=majority';
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB подключена!'))
     .catch(err => console.error('Ошибка подключения к MongoDB:', err));
 
-// --- СХЕМЫ БАЗЫ ДАННЫХ ---
+// Схемы
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: String,
@@ -24,27 +23,17 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model('User', UserSchema);
 
 const MessageSchema = new mongoose.Schema({
-    id: String,
-    user: String,
-    message: String,
-    room: String,
-    avatar: String,
-    isMedia: Boolean,
-    mediaUrl: String,
-    mediaType: String,
-    reactions: { type: Object, default: {} },
-    replyTo: String
+    id: String, user: String, message: String, room: String, avatar: String,
+    isMedia: Boolean, mediaUrl: String, mediaType: String, reactions: { type: Object, default: {} }, replyTo: String
 });
 const Message = mongoose.model('Message', MessageSchema);
 
 const GroupSchema = new mongoose.Schema({
-    id: { type: String, unique: true },
-    name: String,
-    members: [String]
+    id: { type: String, unique: true }, name: String, members: [String]
 });
 const Group = mongoose.model('Group', GroupSchema);
 
-// --- НАСТРОЙКА СЕРВЕРА ---
+// Настройки сервера
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
@@ -120,9 +109,13 @@ io.on('connection', (socket) => {
                 currentUser = username;
                 onlineUsers.add(username);
                 activeCalls[username] = socket.id; 
+                
+                // Отправляем статус всем
                 io.emit('online status', Array.from(onlineUsers));
+                
                 socket.emit('auth success', username);
                 
+                // Загружаем комнаты
                 const groups = await Group.find({ members: username });
                 const rooms = ['general', ...groups.map(g => g.id)];
                 const allGroups = await Group.find({});
