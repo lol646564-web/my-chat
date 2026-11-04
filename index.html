@@ -345,7 +345,17 @@
         let localStream = null;
         let currentCallPartner = null;
         let isCaller = false;
-        const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        
+        // --- ТВОЙ TURN-СЕРВЕР ---
+        const configuration = { 
+            iceServers: [
+                { urls: "stun:stun.relay.metered.ca:80" },
+                { urls: "turn:global.relay.metered.ca:80", username: "c169418935889721820cec82", credential: "7bm2x4pqV44s/Rm2" },
+                { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "c169418935889721820cec82", credential: "7bm2x4pqV44s/Rm2" },
+                { urls: "turn:global.relay.metered.ca:443", username: "c169418935889721820cec82", credential: "7bm2x4pqV44s/Rm2" },
+                { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: "c169418935889721820cec82", credential: "7bm2x4pqV44s/Rm2" }
+            ] 
+        };
 
         const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -372,7 +382,6 @@
             document.getElementById('call-avatar').innerText = friend.charAt(0).toUpperCase();
 
             try {
-                // ВИДЕО И АУДИО
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('local-video').srcObject = localStream;
                 document.getElementById('local-video').muted = true;
