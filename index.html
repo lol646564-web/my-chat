@@ -157,6 +157,11 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         
+        #unmute-btn {
+            display: none; margin: 15px; background: #ff9800; color: white; 
+            padding: 12px 25px; border-radius: 25px; border: none; cursor: pointer; font-weight: bold;
+        }
+
         .call-controls { margin-top: 10px; display: flex; gap: 30px; }
         .call-btn {
             width: 70px; height: 70px; border-radius: 50%; border: none;
@@ -197,7 +202,9 @@
         <div class="video-container">
             <video id="remote-video" autoplay playsinline></video>
             <video id="local-video" autoplay playsinline muted></video>
+            <audio id="remote-audio" autoplay></audio>
         </div>
+        <button id="unmute-btn" onclick="forceUnmute()">🔊 Включить звук</button>
         <div class="call-controls" id="call-controls"></div>
     </div>
 
@@ -340,7 +347,7 @@
 
         let onlineUsersList = [];
         
-        // WebRTC с TURN-сервером (TCP/TLS для обхода блокировок)
+        // WebRTC с OpenRelay (публичные данные)
         let peerConnection = null;
         let localStream = null;
         let currentCallPartner = null;
@@ -348,17 +355,10 @@
         
         const configuration = { 
             iceServers: [
-                { urls: "stun:stun.relay.metered.ca:80" },
-                { 
-                    urls: "turn:global.relay.metered.ca:80?transport=tcp", 
-                    username: "c169418935889721820cec82", 
-                    credential: "7bm2x4pqV44s/Rm2" 
-                },
-                { 
-                    urls: "turns:global.relay.metered.ca:443?transport=tcp", 
-                    username: "c169418935889721820cec82", 
-                    credential: "7bm2x4pqV44s/Rm2" 
-                }
+                { urls: "stun:openrelay.metered.ca:80" },
+                { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+                { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+                { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
             ] 
         };
 
@@ -371,7 +371,13 @@
             }
         }
 
-        // --- ЗВОНКИ ---
+        function forceUnmute() {
+            const remoteVideo = document.getElementById('remote-video');
+            const remoteAudio = document.getElementById('remote-audio');
+            remoteVideo.play().then(() => { document.getElementById('unmute-btn').style.display = 'none'; }).catch(e => console.log(e));
+            remoteAudio.play().then(() => { document.getElementById('unmute-btn').style.display = 'none'; }).catch(e => console.log(e));
+        }
+
         async function startCall() {
             if (currentRoom === 'general' || currentRoom.startsWith('group_')) return alert("Звонки только в ЛС!");
             const parts = currentRoom.split('_');
@@ -419,8 +425,21 @@
 
             peerConnection.ontrack = (event) => {
                 const remoteVideo = document.getElementById('remote-video');
-                remoteVideo.srcObject = event.streams[0];
-                remoteVideo.play().catch(e => console.log("Autoplay blocked", e));
+                const remoteAudio = document.getElementById('remote-audio');
+                
+                if (remoteVideo.srcObject !== event.streams[0]) {
+                    remoteVideo.srcObject = event.streams[0];
+                    remoteAudio.srcObject = event.streams[0];
+                    
+                    remoteVideo.play().catch(e => {
+                        console.log("Autoplay blocked for video");
+                        document.getElementById('unmute-btn').style.display = 'block';
+                    });
+                    remoteAudio.play().catch(e => {
+                        console.log("Autoplay blocked for audio");
+                        document.getElementById('unmute-btn').style.display = 'block';
+                    });
+                }
             };
 
             peerConnection.onicecandidate = (event) => {
@@ -483,7 +502,9 @@
             if (peerConnection) { peerConnection.close(); peerConnection = null; }
             if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
             document.getElementById('remote-video').srcObject = null;
+            document.getElementById('remote-audio').srcObject = null;
             document.getElementById('local-video').srcObject = null;
+            document.getElementById('unmute-btn').style.display = 'none';
             document.getElementById('call-screen').classList.add('hidden');
             document.getElementById('call-status').innerText = "Звонок завершен";
             window.pendingOffer = null;
@@ -513,7 +534,6 @@
             }
         }
 
-        // --- ОСТАЛЬНОЙ КОД ---
         socket.on('online status', (users) => { onlineUsersList = users; updateOnlineUI(); });
         function updateOnlineUI() {
             document.querySelectorAll('.online-dot').forEach(dot => {
