@@ -4,7 +4,47 @@ const path = require('path');
 const { Server } = require("socket.io");
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
+const mongoose = require('mongoose');
 
+// --- ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ (ТВОЯ СТРОКА) ---
+const MONGO_URI = 'mongodb+srv://lol646564_db_user:ldX5Ta9z4tjIj1dK@cadelyfiles.wmgybw6.mongodb.net/?retryWrites=true&w=majority';
+
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('MongoDB подключена!'))
+    .catch(err => console.error('Ошибка подключения к MongoDB:', err));
+
+// --- СХЕМЫ БАЗЫ ДАННЫХ ---
+const UserSchema = new mongoose.Schema({
+    username: { type: String, unique: true, required: true },
+    password: String,
+    status: { type: String, default: "Пользователь чата" },
+    bio: { type: String, default: "" },
+    avatar: { type: String, default: null }
+});
+const User = mongoose.model('User', UserSchema);
+
+const MessageSchema = new mongoose.Schema({
+    id: String,
+    user: String,
+    message: String,
+    room: String,
+    avatar: String,
+    isMedia: Boolean,
+    mediaUrl: String,
+    mediaType: String,
+    reactions: { type: Object, default: {} },
+    replyTo: String
+});
+const Message = mongoose.model('Message', MessageSchema);
+
+const GroupSchema = new mongoose.Schema({
+    id: { type: String, unique: true },
+    name: String,
+    members: [String]
+});
+const Group = mongoose.model('Group', GroupSchema);
+
+// --- НАСТРОЙКА СЕРВЕРА ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
@@ -12,7 +52,6 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => { cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname)); }
 });
-
 const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } }).single('media');
 
 const server = http.createServer((req, res) => {
@@ -54,65 +93,45 @@ const server = http.createServer((req, res) => {
 });
 
 const io = new Server(server);
-
-let users = {};
-let messages = [];
-let groups = {}; 
 let onlineUsers = new Set();
 const activeCalls = {}; 
-
-if (fs.existsSync('users.json')) {
-    let rawUsers = JSON.parse(fs.readFileSync('users.json', 'utf8'));
-    for (let name in rawUsers) {
-        if (typeof rawUsers[name] === 'string') users[name] = { password: rawUsers[name], status: "Пользователь чата", bio: "", avatar: null };
-        else {
-            users[name] = rawUsers[name];
-            if (!users[name].avatar) users[name].avatar = null;
-            if (users[name].bio === undefined) users[name].bio = "";
-        }
-    }
-}
-if (fs.existsSync('messages.json')) messages = JSON.parse(fs.readFileSync('messages.json', 'utf8'));
-if (fs.existsSync('groups.json')) groups = JSON.parse(fs.readFileSync('groups.json', 'utf8'));
-
-function saveUsers() { fs.writeFileSync('users.json', JSON.stringify(users, null, 2)); }
-function saveMessages() { fs.writeFileSync('messages.json', JSON.stringify(messages, null, 2)); }
-function saveGroups() { fs.writeFileSync('groups.json', JSON.stringify(groups, null, 2)); }
-
-function getUserRooms(username) {
-    const rooms = new Set();
-    rooms.add('general');
-    for (const [roomId, roomData] of Object.entries(groups)) {
-        if (roomData.members.includes(username)) rooms.add(roomId);
-    }
-    return Array.from(rooms);
-}
 
 io.on('connection', (socket) => {
     let currentUser = null;
 
-    socket.on('register', (data) => {
-        const { username, password } = data;
-        if (users[username]) return socket.emit('auth error', 'Пользователь уже существует!');
-        users[username] = { password: bcrypt.hashSync(password, 10), status: "Пользователь чата", bio: "", avatar: null };
-        saveUsers();
-        socket.emit('auth success', username);
+    socket.on('register', async (data) => {
+        try {
+            const { username, password } = data;
+            const existing = await User.findOne({ username });
+            if (existing) return socket.emit('auth error', 'Пользователь уже существует!');
+            const hashedPassword = bcrypt.hashSync(password, 10);
+            const newUser = new User({ username, password: hashedPassword });
+            await newUser.save();
+            socket.emit('auth success', username);
+        } catch (e) { socket.emit('auth error', 'Ошибка регистрации'); }
     });
 
-    socket.on('login', (data) => {
-        const { username, password } = data;
-        if (!users[username]) return socket.emit('auth error', 'Пользователь не найден!');
-        const dbPass = typeof users[username] === 'string' ? users[username] : users[username].password;
-        if (bcrypt.compareSync(password, dbPass)) {
-            currentUser = username;
-            onlineUsers.add(username);
-            activeCalls[username] = socket.id; 
-            io.emit('online status', Array.from(onlineUsers));
-            socket.emit('auth success', username);
-            socket.emit('room list', getUserRooms(username));
-        } else {
-            socket.emit('auth error', 'Неверный пароль!');
-        }
+    socket.on('login', async (data) => {
+        try {
+            const { username, password } = data;
+            const user = await User.findOne({ username });
+            if (!user) return socket.emit('auth error', 'Пользователь не найден!');
+            if (bcrypt.compareSync(password, user.password)) {
+                currentUser = username;
+                onlineUsers.add(username);
+                activeCalls[username] = socket.id; 
+                io.emit('online status', Array.from(onlineUsers));
+                socket.emit('auth success', username);
+                
+                const groups = await Group.find({ members: username });
+                const rooms = ['general', ...groups.map(g => g.id)];
+                const allGroups = await Group.find({});
+                allGroups.forEach(g => { if(g.id.includes('_') && g.members.includes(username)) rooms.push(g.id); });
+                socket.emit('room list', [...new Set(rooms)]);
+            } else {
+                socket.emit('auth error', 'Неверный пароль!');
+            }
+        } catch (e) { socket.emit('auth error', 'Ошибка входа'); }
     });
 
     socket.on('disconnect', () => {
@@ -123,136 +142,142 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('get rooms', (username) => socket.emit('room list', getUserRooms(username)));
-    socket.on('get all users', () => {
-        const userList = Object.keys(users).map(name => ({ username: name, avatar: users[name].avatar }));
-        socket.emit('all users list', userList);
+    socket.on('get rooms', async (username) => {
+        const groups = await Group.find({ members: username });
+        const rooms = ['general', ...groups.map(g => g.id)];
+        socket.emit('room list', [...new Set(rooms)]);
     });
-    socket.on('get profile', (username) => {
-        if (!users[username]) return socket.emit('profile error', 'Пользователь не найден');
+
+    socket.on('get all users', async () => {
+        const users = await User.find({}, 'username avatar');
+        socket.emit('all users list', users);
+    });
+
+    socket.on('get profile', async (username) => {
+        const user = await User.findOne({ username });
+        if (!user) return socket.emit('profile error', 'Пользователь не найден');
         socket.emit('profile data', { 
-            username: username, status: users[username].status, bio: users[username].bio || "", avatar: users[username].avatar,
+            username: user.username, status: user.status, bio: user.bio, avatar: user.avatar,
             isOnline: onlineUsers.has(username)
         });
     });
-    socket.on('update profile', (data) => {
+
+    socket.on('update profile', async (data) => {
         const { oldUsername, newUsername, status, bio, avatar } = data;
-        if (newUsername !== oldUsername && users[newUsername]) return socket.emit('profile error', 'Это имя уже занято!');
-        const userData = users[oldUsername];
-        const updatedData = { password: userData.password, status: status, bio: bio !== undefined ? bio : (userData.bio || ""), avatar: avatar !== undefined ? avatar : userData.avatar };
         if (newUsername !== oldUsername) {
-            users[newUsername] = updatedData; delete users[oldUsername];
-            messages.forEach(m => { if (m.user === oldUsername) m.user = newUsername; });
-            saveMessages();
-        } else users[oldUsername] = updatedData;
-        saveUsers();
+            const existing = await User.findOne({ username: newUsername });
+            if (existing) return socket.emit('profile error', 'Это имя уже занято!');
+        }
+        await User.updateOne({ username: oldUsername }, { username: newUsername, status, bio, avatar });
         socket.emit('profile updated', newUsername);
     });
-    socket.on('check user', (username) => {
-        if (!users[username]) socket.emit('user not found', username);
+
+    socket.on('check user', async (username) => {
+        const user = await User.findOne({ username });
+        if (!user) socket.emit('user not found', username);
         else socket.emit('user found', username);
     });
-    socket.on('create private chat', (data) => {
+
+    socket.on('create private chat', async (data) => {
         const roomId = [data.user, data.friend].sort().join('_');
-        if (!groups[roomId]) {
-            groups[roomId] = { name: 'ЛС', members: [data.user, data.friend] };
-            saveGroups();
+        const existing = await Group.findOne({ id: roomId });
+        if (!existing) {
+            await new Group({ id: roomId, name: 'ЛС', members: [data.user, data.friend] }).save();
             io.emit('update room list');
         }
         socket.emit('private chat created', roomId);
     });
-    socket.on('create group', (data) => {
+
+    socket.on('create group', async (data) => {
         const roomId = 'group_' + Date.now();
-        groups[roomId] = { name: data.groupName, members: data.members };
-        saveGroups();
-        const systemMsg = {
-            id: Date.now() + '-sys',
-            user: 'Система', message: `Группа "${data.groupName}" создана.`,
+        await new Group({ id: roomId, name: data.groupName, members: data.members }).save();
+        const sysMsg = new Message({
+            id: Date.now() + '-sys', user: 'Система', message: `Группа "${data.groupName}" создана.`,
             room: roomId, avatar: null, isMedia: false, reactions: {}
-        };
-        messages.push(systemMsg);
-        saveMessages();
+        });
+        await sysMsg.save();
         io.emit('update room list'); 
     });
-    socket.on('join room', (roomName) => {
+
+    socket.on('join room', async (roomName) => {
         socket.join(roomName);
-        const roomMessages = messages.filter(m => m.room === roomName);
-        socket.emit('room history', roomMessages);
+        const msgs = await Message.find({ room: roomName });
+        socket.emit('room history', msgs);
     });
-    socket.on('get room name', (roomId) => {
-        if (groups[roomId]) {
-            let name = groups[roomId].name;
+
+    socket.on('get room name', async (roomId) => {
+        const group = await Group.findOne({ id: roomId });
+        if (group) {
+            let name = group.name;
             if (name === 'ЛС') {
                 const parts = roomId.split('_');
-                const friend = parts.find(p => p !== currentUser);
-                name = friend; 
+                name = parts.find(p => p !== currentUser); 
             }
             socket.emit('room name', { roomId: roomId, name: name });
         }
     });
-    socket.on('chat message', (data) => {
-        const msgObj = { 
+
+    socket.on('chat message', async (data) => {
+        const user = await User.findOne({ username: data.user });
+        const msg = new Message({
             id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
             user: data.user, message: data.message, room: data.room,
-            avatar: users[data.user] ? users[data.user].avatar : null,
-            isMedia: false, mediaUrl: null, mediaType: null, reactions: {}, replyTo: data.replyTo || null
-        };
-        messages.push(msgObj); saveMessages();
-        io.to(data.room).emit('chat message', msgObj);
+            avatar: user ? user.avatar : null, isMedia: false, reactions: {}, replyTo: data.replyTo || null
+        });
+        await msg.save();
+        io.to(data.room).emit('chat message', msg);
     });
-    socket.on('send media', (data) => {
-        const msgObj = { 
+
+    socket.on('send media', async (data) => {
+        const user = await User.findOne({ username: data.user });
+        const msg = new Message({
             id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
             user: data.user, message: data.caption || '', room: data.room,
-            avatar: users[data.user] ? users[data.user].avatar : null,
-            isMedia: true, mediaUrl: data.url, mediaType: data.type, reactions: {}, replyTo: data.replyTo || null
-        };
-        messages.push(msgObj); saveMessages();
-        io.to(data.room).emit('chat message', msgObj);
+            avatar: user ? user.avatar : null, isMedia: true, mediaUrl: data.url, mediaType: data.type, reactions: {}, replyTo: data.replyTo || null
+        });
+        await msg.save();
+        io.to(data.room).emit('chat message', msg);
     });
-    socket.on('delete message', (data) => {
-        const msgIndex = messages.findIndex(m => m.id === data.messageId && m.user === data.user);
-        if (msgIndex !== -1) {
-            const room = messages[msgIndex].room;
-            messages.splice(msgIndex, 1); saveMessages();
-            io.to(room).emit('message deleted', data.messageId);
-        }
+
+    socket.on('delete message', async (data) => {
+        await Message.deleteOne({ id: data.messageId, user: data.user });
+        io.to(data.room || 'general').emit('message deleted', data.messageId);
     });
-    socket.on('add reaction', (data) => {
-        const msg = messages.find(m => m.id === data.messageId);
+
+    socket.on('add reaction', async (data) => {
+        const msg = await Message.findOne({ id: data.messageId });
         if (msg) {
-            if (!msg.reactions) msg.reactions = {};
-            if (!msg.reactions[data.emoji]) msg.reactions[data.emoji] = [];
-            const userIndex = msg.reactions[data.emoji].indexOf(data.user);
-            if (userIndex === -1) msg.reactions[data.emoji].push(data.user);
-            else {
-                msg.reactions[data.emoji].splice(userIndex, 1);
-                if (msg.reactions[data.emoji].length === 0) delete msg.reactions[data.emoji];
-            }
-            saveMessages();
-            io.to(msg.room).emit('update reaction', { messageId: msg.id, reactions: msg.reactions });
+            let reactions = msg.reactions || {};
+            if (!reactions[data.emoji]) reactions[data.emoji] = [];
+            const idx = reactions[data.emoji].indexOf(data.user);
+            if (idx === -1) reactions[data.emoji].push(data.user);
+            else { reactions[data.emoji].splice(idx, 1); if (reactions[data.emoji].length === 0) delete reactions[data.emoji]; }
+            msg.reactions = reactions;
+            await msg.save();
+            io.to(msg.room).emit('update reaction', { messageId: msg.id, reactions: reactions });
         }
     });
+
     socket.on('typing', (data) => socket.to(data.room).emit('user typing', data.user));
     socket.on('stop typing', (data) => socket.to(data.room).emit('user stop typing', data.user));
 
     // --- ЗВОНКИ ---
     socket.on('call user', (data) => {
-        const targetSocketId = activeCalls[data.to];
-        if (targetSocketId) io.to(targetSocketId).emit('incoming call', { from: data.from, offer: data.offer });
+        const target = activeCalls[data.to];
+        if (target) io.to(target).emit('incoming call', { from: data.from, offer: data.offer });
         else socket.emit('call error', 'Пользователь не в сети');
     });
     socket.on('answer call', (data) => {
-        const targetSocketId = activeCalls[data.to];
-        if (targetSocketId) io.to(targetSocketId).emit('call answered', { answer: data.answer });
+        const target = activeCalls[data.to];
+        if (target) io.to(target).emit('call answered', { answer: data.answer });
     });
     socket.on('end call', (data) => {
-        const targetSocketId = activeCalls[data.to];
-        if (targetSocketId) io.to(targetSocketId).emit('call ended');
+        const target = activeCalls[data.to];
+        if (target) io.to(target).emit('call ended');
     });
     socket.on('ice candidate', (data) => {
-        const targetSocketId = activeCalls[data.to];
-        if (targetSocketId) io.to(targetSocketId).emit('ice candidate', { candidate: data.candidate });
+        const target = activeCalls[data.to];
+        if (target) io.to(target).emit('ice candidate', { candidate: data.candidate });
     });
 });
 
