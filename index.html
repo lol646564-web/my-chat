@@ -340,20 +340,25 @@
 
         let onlineUsersList = [];
         
-        // WebRTC
+        // WebRTC с TURN-сервером (TCP/TLS для обхода блокировок)
         let peerConnection = null;
         let localStream = null;
         let currentCallPartner = null;
         let isCaller = false;
         
-        // --- ТВОЙ TURN-СЕРВЕР ---
         const configuration = { 
             iceServers: [
                 { urls: "stun:stun.relay.metered.ca:80" },
-                { urls: "turn:global.relay.metered.ca:80", username: "c169418935889721820cec82", credential: "7bm2x4pqV44s/Rm2" },
-                { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "c169418935889721820cec82", credential: "7bm2x4pqV44s/Rm2" },
-                { urls: "turn:global.relay.metered.ca:443", username: "c169418935889721820cec82", credential: "7bm2x4pqV44s/Rm2" },
-                { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: "c169418935889721820cec82", credential: "7bm2x4pqV44s/Rm2" }
+                { 
+                    urls: "turn:global.relay.metered.ca:80?transport=tcp", 
+                    username: "c169418935889721820cec82", 
+                    credential: "7bm2x4pqV44s/Rm2" 
+                },
+                { 
+                    urls: "turns:global.relay.metered.ca:443?transport=tcp", 
+                    username: "c169418935889721820cec82", 
+                    credential: "7bm2x4pqV44s/Rm2" 
+                }
             ] 
         };
 
@@ -378,8 +383,6 @@
 
             document.getElementById('call-screen').classList.remove('hidden');
             document.getElementById('call-status').innerText = "Вызов...";
-            document.getElementById('call-partner-name').innerText = friend;
-            document.getElementById('call-avatar').innerText = friend.charAt(0).toUpperCase();
 
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -433,8 +436,6 @@
 
             document.getElementById('call-screen').classList.remove('hidden');
             document.getElementById('call-status').innerText = "Входящий звонок...";
-            document.getElementById('call-partner-name').innerText = data.from;
-            document.getElementById('call-avatar').innerText = data.from.charAt(0).toUpperCase();
             
             updateCallControls('incoming');
             window.pendingOffer = data.offer;
