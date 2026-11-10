@@ -12,7 +12,6 @@ mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB подключена!'))
     .catch(err => console.error('Ошибка подключения к MongoDB:', err));
 
-// Схемы
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: String,
@@ -33,7 +32,6 @@ const GroupSchema = new mongoose.Schema({
 });
 const Group = mongoose.model('Group', GroupSchema);
 
-// Настройки сервера
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
@@ -44,7 +42,23 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } }).single('media');
 
 const server = http.createServer((req, res) => {
-    if (req.url === '/') {
+    // --- НОВОЕ ДЛЯ PWA ---
+    if (req.url === '/manifest.json') {
+        fs.readFile('manifest.json', (err, data) => {
+            if (err) { res.writeHead(404); res.end('Not found'); return; }
+            res.writeHead(200, { 'Content-Type': 'application/manifest+json' });
+            res.end(data);
+        });
+    }
+    else if (req.url === '/sw.js') {
+        fs.readFile('sw.js', (err, data) => {
+            if (err) { res.writeHead(404); res.end('Not found'); return; }
+            res.writeHead(200, { 'Content-Type': 'application/javascript' });
+            res.end(data);
+        });
+    }
+    // --- КОНЕЦ НОВОГО ---
+    else if (req.url === '/') {
         fs.readFile('index.html', (err, data) => {
             if (err) { res.writeHead(500); res.end('Ошибка'); return; }
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -109,13 +123,9 @@ io.on('connection', (socket) => {
                 currentUser = username;
                 onlineUsers.add(username);
                 activeCalls[username] = socket.id; 
-                
-                // Отправляем статус всем
                 io.emit('online status', Array.from(onlineUsers));
-                
                 socket.emit('auth success', username);
                 
-                // Загружаем комнаты
                 const groups = await Group.find({ members: username });
                 const rooms = ['general', ...groups.map(g => g.id)];
                 const allGroups = await Group.find({});

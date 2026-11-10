@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Мой Чат</title>
+    <title>Cadely</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#007bff">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968841.png">
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
@@ -137,37 +140,13 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
 
-        /* ОКНО ЗВОНКА */
-        #call-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 5000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: white; backdrop-filter: blur(10px);
-        }
-        .video-container {
-            position: relative; width: 90%; max-width: 800px; height: 60vh;
-            background: #000; border-radius: 20px; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px;
-        }
+        #call-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; backdrop-filter: blur(10px); }
+        .video-container { position: relative; width: 90%; max-width: 800px; height: 60vh; background: #000; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
-        #local-video {
-            position: absolute; bottom: 20px; right: 20px;
-            width: 150px; height: 100px; background: #222; border-radius: 10px;
-            border: 2px solid white; object-fit: cover;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        
-        #unmute-btn {
-            display: none; margin: 15px; background: #ff9800; color: white; 
-            padding: 12px 25px; border-radius: 25px; border: none; cursor: pointer; font-weight: bold;
-        }
-
+        #local-video { position: absolute; bottom: 20px; right: 20px; width: 150px; height: 100px; background: #222; border-radius: 10px; border: 2px solid white; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        #unmute-btn { display: none; margin: 15px; background: #ff9800; color: white; padding: 12px 25px; border-radius: 25px; border: none; cursor: pointer; font-weight: bold; }
         .call-controls { margin-top: 10px; display: flex; gap: 30px; }
-        .call-btn {
-            width: 70px; height: 70px; border-radius: 50%; border: none;
-            font-size: 28px; cursor: pointer; display: flex; justify-content: center; align-items: center;
-            transition: transform 0.2s;
-        }
+        .call-btn { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 28px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: transform 0.2s; }
         .call-btn:active { transform: scale(0.9); }
         .accept-btn { background: #4CAF50; color: white; }
         .decline-btn { background: #f44336; color: white; }
@@ -188,7 +167,6 @@
             .send-btn { width: 40px; height: 40px; font-size: 16px; }
             .attach-btn { width: 40px; height: 40px; font-size: 16px; }
             #profile-panel { width: 100%; top: 0; bottom: 0; right: 0; left: 0; z-index: 2000; }
-            
             .video-container { height: 40vh; width: 95%; }
             #local-video { width: 100px; height: 70px; bottom: 10px; right: 10px; }
         }
@@ -196,7 +174,6 @@
     </style>
 </head>
 <body>
-    <!-- ОКНО ЗВОНКА -->
     <div id="call-screen" class="hidden">
         <h2 id="call-status" style="margin-bottom: 15px;">Звонок...</h2>
         <div class="video-container">
@@ -347,7 +324,6 @@
 
         let onlineUsersList = [];
         
-        // WebRTC с OpenRelay (публичные данные)
         let peerConnection = null;
         let localStream = null;
         let currentCallPartner = null;
@@ -355,7 +331,7 @@
         
         const configuration = { 
             iceServers: [
-                { urls: "stun:openrelay.metered.ca:80" },
+                { urls: "stun:stun.l.google.com:19302" },
                 { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
                 { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
                 { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
@@ -372,10 +348,8 @@
         }
 
         function forceUnmute() {
-            const remoteVideo = document.getElementById('remote-video');
-            const remoteAudio = document.getElementById('remote-audio');
-            remoteVideo.play().then(() => { document.getElementById('unmute-btn').style.display = 'none'; }).catch(e => console.log(e));
-            remoteAudio.play().then(() => { document.getElementById('unmute-btn').style.display = 'none'; }).catch(e => console.log(e));
+            document.getElementById('remote-video').play().then(() => { document.getElementById('unmute-btn').style.display = 'none'; }).catch(e => console.log(e));
+            document.getElementById('remote-audio').play().then(() => { document.getElementById('unmute-btn').style.display = 'none'; }).catch(e => console.log(e));
         }
 
         async function startCall() {
@@ -432,11 +406,9 @@
                     remoteAudio.srcObject = event.streams[0];
                     
                     remoteVideo.play().catch(e => {
-                        console.log("Autoplay blocked for video");
                         document.getElementById('unmute-btn').style.display = 'block';
                     });
                     remoteAudio.play().catch(e => {
-                        console.log("Autoplay blocked for audio");
                         document.getElementById('unmute-btn').style.display = 'block';
                     });
                 }
@@ -848,6 +820,15 @@
         });
         socket.on('user typing', (user) => document.getElementById('typing-status').innerText = user + " печатает...");
         socket.on('user stop typing', () => document.getElementById('typing-status').innerText = "");
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((reg) => console.log('Service Worker зарегистрирован'))
+                    .catch((err) => console.log('Ошибка Service Worker', err));
+            });
+        }
     </script>
 </body>
 </html>

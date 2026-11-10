@@ -1,0 +1,16 @@
+{
+  "name": "Cadely",
+  "short_name": "Cadely",
+  "description": "Мой мессенджер",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#a8c0ff",
+  "theme_color": "#007bff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5968/5968841.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
