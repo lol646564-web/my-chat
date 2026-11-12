@@ -4,13 +4,13 @@
   "description": "Мой мессенджер",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#a8c0ff",
+  "background_color": "#f0f2f5",
   "theme_color": "#007bff",
   "icons": [
     {
-      "src": "/cadelylogo.png",
+      "src": "/cadelylogo.jpg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }

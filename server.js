@@ -12,6 +12,7 @@ mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB подключена!'))
     .catch(err => console.error('Ошибка подключения к MongoDB:', err));
 
+// Схемы
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: String,
@@ -32,6 +33,7 @@ const GroupSchema = new mongoose.Schema({
 });
 const Group = mongoose.model('Group', GroupSchema);
 
+// Настройки сервера
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
@@ -42,8 +44,14 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } }).single('media');
 
 const server = http.createServer((req, res) => {
-    // --- НОВОЕ ДЛЯ PWA ---
-    if (req.url === '/manifest.json') {
+    if (req.url === '/') {
+        fs.readFile('index.html', (err, data) => {
+            if (err) { res.writeHead(500); res.end('Ошибка'); return; }
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(data);
+        });
+    } 
+    else if (req.url === '/manifest.json') {
         fs.readFile('manifest.json', (err, data) => {
             if (err) { res.writeHead(404); res.end('Not found'); return; }
             res.writeHead(200, { 'Content-Type': 'application/manifest+json' });
@@ -57,14 +65,6 @@ const server = http.createServer((req, res) => {
             res.end(data);
         });
     }
-    // --- КОНЕЦ НОВОГО ---
-    else if (req.url === '/') {
-        fs.readFile('index.html', (err, data) => {
-            if (err) { res.writeHead(500); res.end('Ошибка'); return; }
-            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-            res.end(data);
-        });
-    } 
     else if (req.url === '/upload-media' && req.method === 'POST') {
         upload(req, res, (err) => {
             if (err) { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); return; }
@@ -127,10 +127,8 @@ io.on('connection', (socket) => {
                 socket.emit('auth success', username);
                 
                 const groups = await Group.find({ members: username });
-                const rooms = ['general', ...groups.map(g => g.id)];
-                const allGroups = await Group.find({});
-                allGroups.forEach(g => { if(g.id.includes('_') && g.members.includes(username)) rooms.push(g.id); });
-                socket.emit('room list', [...new Set(rooms)]);
+                const rooms = groups.map(g => g.id);
+                socket.emit('room list', rooms);
             } else {
                 socket.emit('auth error', 'Неверный пароль!');
             }
@@ -147,8 +145,8 @@ io.on('connection', (socket) => {
 
     socket.on('get rooms', async (username) => {
         const groups = await Group.find({ members: username });
-        const rooms = ['general', ...groups.map(g => g.id)];
-        socket.emit('room list', [...new Set(rooms)]);
+        const rooms = groups.map(g => g.id);
+        socket.emit('room list', rooms);
     });
 
     socket.on('get all users', async () => {
@@ -194,11 +192,6 @@ io.on('connection', (socket) => {
     socket.on('create group', async (data) => {
         const roomId = 'group_' + Date.now();
         await new Group({ id: roomId, name: data.groupName, members: data.members }).save();
-        const sysMsg = new Message({
-            id: Date.now() + '-sys', user: 'Система', message: `Группа "${data.groupName}" создана.`,
-            room: roomId, avatar: null, isMedia: false, reactions: {}
-        });
-        await sysMsg.save();
         io.emit('update room list'); 
     });
 
