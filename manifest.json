@@ -5,5 +5,12 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f0f2f5",
-  "theme_color": "#007bff"
+  "theme_color": "#007bff",
+  "icons": [
+    {
+      "src": "/cadelylogo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
 }

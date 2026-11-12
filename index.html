@@ -84,6 +84,8 @@
         .message-author { font-size: 12px; font-weight: 700; color: var(--primary-color); margin-bottom: 2px; cursor: pointer; }
         .message-row.own .message-author { display: none; }
         .message-text { font-size: 15px; line-height: 1.4; word-break: break-word; }
+        .message-time { font-size: 10px; color: rgba(0,0,0,0.4); text-align: right; margin-top: 2px; display: block; }
+        body.dark-theme .message-time { color: rgba(255,255,255,0.5); }
         
         .msg-actions { display: none; position: absolute; top: -30px; right: 0; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 2px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); gap: 2px; z-index: 10; }
         .message-row:hover .msg-actions, .message-row:active .msg-actions { display: flex; }
@@ -317,7 +319,7 @@
     <script>
         const socket = io();
         let currentUser = "";
-        let currentRoom = ""; // По умолчанию пусто
+        let currentRoom = "general"; // Возвращаем общий чат
         let profileUser = "";
         let profileData = {};
         let tempAvatarPath = null;
@@ -548,7 +550,7 @@
             document.getElementById('auth-block').classList.add('hidden');
             document.getElementById('chat-block').classList.remove('hidden');
             document.getElementById('sidebar').classList.remove('hidden');
-            socket.emit('get rooms', currentUser); // Запрашиваем комнаты, но не входим в general
+            socket.emit('join room', 'general'); socket.emit('get rooms', currentUser);
         });
         socket.on('auth error', (msg) => {
             if (document.getElementById('auth-message').innerText === "Авто-вход...") {
@@ -587,7 +589,8 @@
             const chatList = document.getElementById('chat-list'); chatList.innerHTML = '';
             rooms.forEach(room => {
                 let displayName = ""; let targetUser = null; let isOnline = false;
-                if (room.startsWith('group_')) { displayName = "Группа"; socket.emit('get room name', room); }
+                if (room === 'general') { displayName = "Общий чат"; }
+                else if (room.startsWith('group_')) { displayName = "Группа"; socket.emit('get room name', room); }
                 else {
                     const parts = room.split('_'); targetUser = parts.find(p => p !== currentUser);
                     displayName = targetUser; isOnline = onlineUsersList.includes(targetUser);
@@ -613,7 +616,7 @@
 
         function switchRoom(room) {
             currentRoom = room;
-            if (room === 'general') { document.getElementById('room-title').innerText = "Выберите чат"; document.getElementById('call-btn').style.display = 'none'; }
+            if (room === 'general') { document.getElementById('room-title').innerText = "Общий чат"; document.getElementById('call-btn').style.display = 'none'; }
             else {
                 const parts = room.split('_');
                 if (parts.length === 2 && !room.startsWith('group_')) {
@@ -626,7 +629,7 @@
 
         function sendMessage() {
             const text = document.getElementById('textInput').value;
-            if (!text || !currentUser || !currentRoom) return;
+            if (!text || !currentUser) return;
             socket.emit('chat message', { user: currentUser, message: text, room: currentRoom, replyTo: replyTargetMessageId });
             document.getElementById('textInput').value = ""; cancelReply();
         }
@@ -646,6 +649,9 @@
             }
             if (msg.message) contentHtml = msg.message + contentHtml;
             
+            const now = new Date();
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            
             let reactionsHtml = '<div class="reactions-container">';
             if (msg.reactions) {
                 for (const [emoji, users] of Object.entries(msg.reactions)) {
@@ -656,7 +662,7 @@
             reactionsHtml += '</div>';
             let actionsHtml = `<div class="msg-actions"><button class="msg-action-btn" onclick="startReply('${msg.id}', '${msg.user}', '${msg.message ? msg.message.substring(0, 20) : 'Медиа'}')">↩️</button>${msg.user === currentUser ? `<button class="msg-action-btn" onclick="deleteMessage('${msg.id}')">🗑️</button>` : ''}</div>`;
             
-            row.innerHTML = `${avatarHtml} <div class="message-wrapper">${actionsHtml}<div class="message-content" onclick="openReactionPicker(event, '${msg.id}')">${replyHtml}${authorHtml}<div class="message-text">${contentHtml}</div></div>${reactionsHtml}</div>`;
+            row.innerHTML = `${avatarHtml} <div class="message-wrapper">${actionsHtml}<div class="message-content" onclick="openReactionPicker(event, '${msg.id}')">${replyHtml}${authorHtml}<div class="message-text">${contentHtml}</div><span class="message-time">${timeString}</span></div>${reactionsHtml}</div>`;
             chatBox.appendChild(row); chatBox.scrollTop = chatBox.scrollHeight;
         }
 
@@ -669,6 +675,7 @@
             if (msg.user !== currentUser) socket.emit('get rooms', currentUser);
             if (msg.user !== currentUser && msg.room !== currentRoom) {
                 if (msg.room.includes('_') && msg.room.includes(currentUser)) showToast(msg.user + " написал тебе: " + (msg.message || "медиафайл"));
+                else if (!msg.room.includes('_')) showToast(msg.user + " в общем чате: " + (msg.message || "медиафайл"));
                 audio.play().catch(e => {});
             }
         });
@@ -741,7 +748,7 @@
 
         let typingTimer;
         document.getElementById('textInput').addEventListener('input', () => {
-            if (!currentUser || !currentRoom) return;
+            if (!currentUser) return;
             socket.emit('typing', { user: currentUser, room: currentRoom });
             clearTimeout(typingTimer);
             typingTimer = setTimeout(() => { socket.emit('stop typing', { user: currentUser, room: currentRoom }); }, 1500);

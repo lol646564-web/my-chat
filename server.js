@@ -126,9 +126,11 @@ io.on('connection', (socket) => {
                 io.emit('online status', Array.from(onlineUsers));
                 socket.emit('auth success', username);
                 
+                // Возвращаем общий чат
+                const rooms = new Set(['general']);
                 const groups = await Group.find({ members: username });
-                const rooms = groups.map(g => g.id);
-                socket.emit('room list', rooms);
+                groups.forEach(g => rooms.add(g.id));
+                socket.emit('room list', Array.from(rooms));
             } else {
                 socket.emit('auth error', 'Неверный пароль!');
             }
@@ -144,9 +146,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('get rooms', async (username) => {
+        const rooms = new Set(['general']);
         const groups = await Group.find({ members: username });
-        const rooms = groups.map(g => g.id);
-        socket.emit('room list', rooms);
+        groups.forEach(g => rooms.add(g.id));
+        socket.emit('room list', Array.from(rooms));
     });
 
     socket.on('get all users', async () => {
