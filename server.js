@@ -24,7 +24,8 @@ const User = mongoose.model('User', UserSchema);
 
 const MessageSchema = new mongoose.Schema({
     id: String, user: String, message: String, room: String, avatar: String,
-    isMedia: Boolean, mediaUrl: String, mediaType: String, reactions: { type: Object, default: {} }, replyTo: String
+    isMedia: Boolean, mediaUrl: String, mediaType: String, reactions: { type: Object, default: {} }, replyTo: String,
+    createdAt: { type: Date, default: Date.now }
 });
 const Message = mongoose.model('Message', MessageSchema);
 
@@ -245,8 +246,12 @@ io.on('connection', (socket) => {
     });
 
     socket.on('delete message', async (data) => {
-        await Message.deleteOne({ id: data.messageId, user: data.user });
-        io.to(data.room || 'general').emit('message deleted', data.messageId);
+        const msg = await Message.findOne({ id: data.messageId });
+        if (msg && msg.user === currentUser) {
+            const room = msg.room;
+            await Message.deleteOne({ id: data.messageId });
+            io.to(room).emit('message deleted', { messageId: data.messageId, room: room });
+        }
     });
 
     socket.on('add reaction', async (data) => {
@@ -254,8 +259,8 @@ io.on('connection', (socket) => {
         if (msg) {
             let reactions = msg.reactions || {};
             if (!reactions[data.emoji]) reactions[data.emoji] = [];
-            const idx = reactions[data.emoji].indexOf(data.user);
-            if (idx === -1) reactions[data.emoji].push(data.user);
+            const idx = reactions[data.emoji].indexOf(currentUser);
+            if (idx === -1) reactions[data.emoji].push(currentUser);
             else { reactions[data.emoji].splice(idx, 1); if (reactions[data.emoji].length === 0) delete reactions[data.emoji]; }
             msg.reactions = reactions;
             await msg.save();
