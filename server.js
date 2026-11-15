@@ -65,6 +65,13 @@ const server = http.createServer((req, res) => {
             res.end(data);
         });
     }
+    else if (req.url === '/cadelylogo.jpg') {
+        fs.readFile('cadelylogo.jpg', (err, data) => {
+            if (err) { res.writeHead(404); res.end('Not found'); return; }
+            res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+            res.end(data);
+        });
+    }
     else if (req.url === '/upload-media' && req.method === 'POST') {
         upload(req, res, (err) => {
             if (err) { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); return; }
@@ -126,7 +133,6 @@ io.on('connection', (socket) => {
                 io.emit('online status', Array.from(onlineUsers));
                 socket.emit('auth success', username);
                 
-                // Возвращаем общий чат
                 const rooms = new Set(['general']);
                 const groups = await Group.find({ members: username });
                 groups.forEach(g => rooms.add(g.id));
