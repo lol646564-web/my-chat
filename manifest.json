@@ -1,7 +1,6 @@
 {
   "name": "Cadely",
   "short_name": "Cadely",
-  "description": "Мой мессенджер",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f0f2f5",
