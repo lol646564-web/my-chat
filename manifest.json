@@ -1,15 +1,12 @@
 {
-  "name": "Cadely",
+  "name": "Cadely Chat",
   "short_name": "Cadely",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f0f2f5",
-  "theme_color": "#007bff",
+  "background_color": "#121212",
+  "theme_color": "#4a90e2",
   "icons": [
-    {
-      "src": "/cadelylogo.jpg",
-      "sizes": "512x512",
-      "type": "image/jpeg"
-    }
+    { "src": "/cadelylogo.jpg", "sizes": "192x192", "type": "image/jpeg" },
+    { "src": "/cadelylogo.jpg", "sizes": "512x512", "type": "image/jpeg" }
   ]
 }

@@ -12,20 +12,21 @@ mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB подключена!'))
     .catch(err => console.error('Ошибка подключения к MongoDB:', err));
 
-// Схемы
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: String,
     status: { type: String, default: "Пользователь чата" },
     bio: { type: String, default: "" },
-    avatar: { type: String, default: null }
+    avatar: { type: String, default: null },
+    lastSeen: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', UserSchema);
 
 const MessageSchema = new mongoose.Schema({
     id: String, user: String, message: String, room: String, avatar: String,
     isMedia: Boolean, mediaUrl: String, mediaType: String, reactions: { type: Object, default: {} }, replyTo: String, replyText: String, replyUser: String,
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    edited: { type: Boolean, default: false }
 });
 const Message = mongoose.model('Message', MessageSchema);
 
@@ -34,7 +35,6 @@ const GroupSchema = new mongoose.Schema({
 });
 const Group = mongoose.model('Group', GroupSchema);
 
-// Настройки сервера
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
@@ -48,59 +48,45 @@ const server = http.createServer((req, res) => {
     if (req.url === '/') {
         fs.readFile('index.html', (err, data) => {
             if (err) { res.writeHead(500); res.end('Ошибка'); return; }
-            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-            res.end(data);
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(data);
         });
-    } 
-    else if (req.url === '/manifest.json') {
+    } else if (req.url === '/manifest.json') {
         fs.readFile('manifest.json', (err, data) => {
             if (err) { res.writeHead(404); res.end('Not found'); return; }
-            res.writeHead(200, { 'Content-Type': 'application/manifest+json' });
-            res.end(data);
+            res.writeHead(200, { 'Content-Type': 'application/manifest+json' }); res.end(data);
         });
-    }
-    else if (req.url === '/sw.js') {
+    } else if (req.url === '/sw.js') {
         fs.readFile('sw.js', (err, data) => {
             if (err) { res.writeHead(404); res.end('Not found'); return; }
-            res.writeHead(200, { 'Content-Type': 'application/javascript' });
-            res.end(data);
+            res.writeHead(200, { 'Content-Type': 'application/javascript' }); res.end(data);
         });
-    }
-    else if (req.url === '/cadelylogo.jpg') {
+    } else if (req.url === '/cadelylogo.jpg') {
         fs.readFile('cadelylogo.jpg', (err, data) => {
             if (err) { res.writeHead(404); res.end('Not found'); return; }
-            res.writeHead(200, { 'Content-Type': 'image/jpeg' });
-            res.end(data);
+            res.writeHead(200, { 'Content-Type': 'image/jpeg' }); res.end(data);
         });
-    }
-    else if (req.url === '/upload-media' && req.method === 'POST') {
+    } else if (req.url === '/upload-media' && req.method === 'POST') {
         upload(req, res, (err) => {
             if (err) { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); return; }
             if (!req.file) { res.writeHead(400); res.end('Файл не получен'); return; }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ path: '/uploads/' + req.file.filename, type: req.file.mimetype }));
+            res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ path: '/uploads/' + req.file.filename, type: req.file.mimetype }));
         });
-    }
-    else if (req.url === '/upload-avatar' && req.method === 'POST') {
+    } else if (req.url === '/upload-avatar' && req.method === 'POST') {
         const avatarUpload = multer({ storage: storage }).single('avatar');
         avatarUpload(req, res, (err) => {
             if (err) { res.writeHead(500); res.end('Ошибка загрузки'); return; }
             if (!req.file) { res.writeHead(400); res.end('Файл не получен'); return; }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ path: '/uploads/' + req.file.filename }));
+            res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ path: '/uploads/' + req.file.filename }));
         });
-    }
-    else if (req.url.startsWith('/uploads/')) {
+    } else if (req.url.startsWith('/uploads/')) {
         const filePath = path.join(__dirname, req.url);
         fs.readFile(filePath, (err, data) => {
             if (err) { res.writeHead(404); res.end('Not found'); return; }
             const ext = path.extname(filePath).toLowerCase();
             const mimeTypes = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime' };
-            res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
-            res.end(data);
+            res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' }); res.end(data);
         });
-    }
-    else { res.writeHead(404); res.end('Страница не найдена'); }
+    } else { res.writeHead(404); res.end('Страница не найдена'); }
 });
 
 const io = new Server(server);
@@ -109,14 +95,13 @@ const activeCalls = {};
 
 io.on('connection', (socket) => {
     let currentUser = null;
+    let lastMessageTime = 0;
 
     socket.on('register', async (data) => {
         try {
             const { username, password } = data;
-            const existing = await User.findOne({ username });
-            if (existing) return socket.emit('auth error', 'Пользователь уже существует!');
-            const hashedPassword = bcrypt.hashSync(password, 10);
-            const newUser = new User({ username, password: hashedPassword });
+            if (await User.findOne({ username })) return socket.emit('auth error', 'Пользователь уже существует!');
+            const newUser = new User({ username, password: bcrypt.hashSync(password, 10), lastSeen: new Date() });
             await newUser.save();
             socket.emit('auth success', username);
         } catch (e) { socket.emit('auth error', 'Ошибка регистрации'); }
@@ -131,23 +116,22 @@ io.on('connection', (socket) => {
                 currentUser = username;
                 onlineUsers.add(username);
                 activeCalls[username] = socket.id; 
+                user.lastSeen = new Date(); await user.save();
                 io.emit('online status', Array.from(onlineUsers));
                 socket.emit('auth success', username);
-                
                 const rooms = new Set(['general']);
                 const groups = await Group.find({ members: username });
                 groups.forEach(g => rooms.add(g.id));
                 socket.emit('room list', Array.from(rooms));
-            } else {
-                socket.emit('auth error', 'Неверный пароль!');
-            }
+            } else socket.emit('auth error', 'Неверный пароль!');
         } catch (e) { socket.emit('auth error', 'Ошибка входа'); }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
         if (currentUser) {
             onlineUsers.delete(currentUser);
             delete activeCalls[currentUser];
+            await User.updateOne({ username: currentUser }, { lastSeen: new Date() });
             io.emit('online status', Array.from(onlineUsers));
         }
     });
@@ -168,31 +152,40 @@ io.on('connection', (socket) => {
         const user = await User.findOne({ username });
         if (!user) return socket.emit('profile error', 'Пользователь не найден');
         socket.emit('profile data', { 
-            username: user.username, status: user.status, bio: user.bio, avatar: user.avatar,
-            isOnline: onlineUsers.has(username)
+            username: user.username, status: user.status, bio: user.bio, avatar: user.avatar, lastSeen: user.lastSeen, isOnline: onlineUsers.has(username)
         });
     });
 
     socket.on('update profile', async (data) => {
         const { oldUsername, newUsername, status, bio, avatar } = data;
-        if (newUsername !== oldUsername) {
-            const existing = await User.findOne({ username: newUsername });
-            if (existing) return socket.emit('profile error', 'Это имя уже занято!');
-        }
+        if (newUsername !== oldUsername && await User.findOne({ username: newUsername })) return socket.emit('profile error', 'Имя занято!');
+        
         await User.updateOne({ username: oldUsername }, { username: newUsername, status, bio, avatar });
+        if (newUsername !== oldUsername) {
+            await Message.updateMany({ user: oldUsername }, { user: newUsername });
+            await Message.updateMany({ replyUser: oldUsername }, { replyUser: newUsername });
+            const allMsgs = await Message.find({});
+            for (let m of allMsgs) {
+                let changed = false;
+                if (m.reactions) { for (let emoji in m.reactions) { const idx = m.reactions[emoji].indexOf(oldUsername); if (idx !== -1) { m.reactions[emoji][idx] = newUsername; changed = true; } } }
+                if (changed) await m.save();
+            }
+            await Group.updateMany({ members: oldUsername }, { $set: { "members.$": newUsername } });
+            if (onlineUsers.has(oldUsername)) { onlineUsers.delete(oldUsername); onlineUsers.add(newUsername); io.emit('online status', Array.from(onlineUsers)); }
+            if (activeCalls[oldUsername]) { activeCalls[newUsername] = activeCalls[oldUsername]; delete activeCalls[oldUsername]; }
+            currentUser = newUsername;
+        }
         socket.emit('profile updated', newUsername);
     });
 
     socket.on('check user', async (username) => {
         const user = await User.findOne({ username });
-        if (!user) socket.emit('user not found', username);
-        else socket.emit('user found', username);
+        if (!user) socket.emit('user not found', username); else socket.emit('user found', username);
     });
 
     socket.on('create private chat', async (data) => {
         const roomId = [data.user, data.friend].sort().join('_');
-        const existing = await Group.findOne({ id: roomId });
-        if (!existing) {
+        if (!await Group.findOne({ id: roomId })) {
             await new Group({ id: roomId, name: 'ЛС', members: [data.user, data.friend] }).save();
             io.emit('update room list');
         }
@@ -205,6 +198,11 @@ io.on('connection', (socket) => {
         io.emit('update room list'); 
     });
 
+    socket.on('leave group', async (roomId) => {
+        await Group.updateOne({ id: roomId }, { $pull: { members: currentUser } });
+        io.emit('update room list');
+    });
+
     socket.on('join room', async (roomName) => {
         socket.join(roomName);
         const msgs = await Message.find({ room: roomName }).sort({ createdAt: 1 });
@@ -215,31 +213,24 @@ io.on('connection', (socket) => {
         const group = await Group.findOne({ id: roomId });
         if (group) {
             let name = group.name;
-            if (name === 'ЛС') {
-                const parts = roomId.split('_');
-                name = parts.find(p => p !== currentUser); 
-            }
-            socket.emit('room name', { roomId: roomId, name: name });
+            if (name === 'ЛС') { name = roomId.split('_').find(p => p !== currentUser); }
+            socket.emit('room name', { roomId, name });
         }
     });
 
     socket.on('chat message', async (data) => {
+        // Анти-спам
+        const now = Date.now();
+        if (now - lastMessageTime < 1500) return socket.emit('call error', 'Не так быстро! Анти-спам 1.5 сек.');
+        lastMessageTime = now;
+
         const user = await User.findOne({ username: data.user });
         let replyText = null, replyUser = null;
         if (data.replyTo) {
-            const originalMsg = await Message.findOne({ id: data.replyTo });
-            if (originalMsg) {
-                replyUser = originalMsg.user;
-                replyText = originalMsg.message || (originalMsg.isMedia ? 'Медиафайл' : '');
-            }
+            const orig = await Message.findOne({ id: data.replyTo });
+            if (orig) { replyUser = orig.user; replyText = orig.message || (orig.isMedia ? 'Медиафайл' : ''); }
         }
-
-        const msg = new Message({
-            id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-            user: data.user, message: data.message, room: data.room,
-            avatar: user ? user.avatar : null, isMedia: false, reactions: {}, 
-            replyTo: data.replyTo || null, replyText, replyUser
-        });
+        const msg = new Message({ id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), user: data.user, message: data.message, room: data.room, avatar: user ? user.avatar : null, isMedia: false, replyTo: data.replyTo || null, replyText, replyUser });
         await msg.save();
         io.to(data.room).emit('chat message', msg);
     });
@@ -248,29 +239,24 @@ io.on('connection', (socket) => {
         const user = await User.findOne({ username: data.user });
         let replyText = null, replyUser = null;
         if (data.replyTo) {
-            const originalMsg = await Message.findOne({ id: data.replyTo });
-            if (originalMsg) {
-                replyUser = originalMsg.user;
-                replyText = originalMsg.message || (originalMsg.isMedia ? 'Медиафайл' : '');
-            }
+            const orig = await Message.findOne({ id: data.replyTo });
+            if (orig) { replyUser = orig.user; replyText = orig.message || (orig.isMedia ? 'Медиафайл' : ''); }
         }
-
-        const msg = new Message({
-            id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-            user: data.user, message: data.caption || '', room: data.room,
-            avatar: user ? user.avatar : null, isMedia: true, mediaUrl: data.url, mediaType: data.type, reactions: {}, 
-            replyTo: data.replyTo || null, replyText, replyUser
-        });
+        const msg = new Message({ id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), user: data.user, message: data.caption || '', room: data.room, avatar: user ? user.avatar : null, isMedia: true, mediaUrl: data.url, mediaType: data.type, replyTo: data.replyTo || null, replyText, replyUser });
         await msg.save();
         io.to(data.room).emit('chat message', msg);
     });
 
     socket.on('delete message', async (data) => {
         const msg = await Message.findOne({ id: data.messageId });
+        if (msg) { await Message.deleteOne({ id: data.messageId }); io.to(msg.room).emit('message deleted', { messageId: data.messageId, room: msg.room }); }
+    });
+
+    socket.on('edit message', async (data) => {
+        const msg = await Message.findOne({ id: data.messageId });
         if (msg && msg.user === currentUser) {
-            const room = msg.room;
-            await Message.deleteOne({ id: data.messageId });
-            io.to(room).emit('message deleted', { messageId: data.messageId, room: room });
+            msg.message = data.newText; msg.edited = true; await msg.save();
+            io.to(msg.room).emit('message edited', { messageId: msg.id, newText: data.newText });
         }
     });
 
@@ -279,19 +265,10 @@ io.on('connection', (socket) => {
         if (msg) {
             let reactions = msg.reactions || {};
             if (!reactions[data.emoji]) reactions[data.emoji] = [];
-            
             const idx = reactions[data.emoji].indexOf(currentUser);
-            if (idx === -1) {
-                // Если юзера нет в списке -> добавляем (теперь счетчик увеличивается)
-                reactions[data.emoji].push(currentUser);
-            } else {
-                // Если юзер уже нажимал -> убираем (счетчик уменьшается)
-                reactions[data.emoji].splice(idx, 1); 
-                if (reactions[data.emoji].length === 0) delete reactions[data.emoji];
-            }
-            
-            msg.reactions = reactions;
-            await msg.save();
+            if (idx === -1) reactions[data.emoji].push(currentUser);
+            else { reactions[data.emoji].splice(idx, 1); if (reactions[data.emoji].length === 0) delete reactions[data.emoji]; }
+            msg.reactions = reactions; await msg.save();
             io.to(msg.room).emit('update reaction', { messageId: msg.id, reactions: reactions });
         }
     });
@@ -299,27 +276,15 @@ io.on('connection', (socket) => {
     socket.on('typing', (data) => socket.to(data.room).emit('user typing', data.user));
     socket.on('stop typing', (data) => socket.to(data.room).emit('user stop typing', data.user));
 
-    // --- ЗВОНКИ ---
     socket.on('call user', (data) => {
         const target = activeCalls[data.to];
         if (target) io.to(target).emit('incoming call', { from: data.from, offer: data.offer });
         else socket.emit('call error', 'Пользователь не в сети');
     });
-    socket.on('answer call', (data) => {
-        const target = activeCalls[data.to];
-        if (target) io.to(target).emit('call answered', { answer: data.answer });
-    });
-    socket.on('end call', (data) => {
-        const target = activeCalls[data.to];
-        if (target) io.to(target).emit('call ended');
-    });
-    socket.on('ice candidate', (data) => {
-        const target = activeCalls[data.to];
-        if (target) io.to(target).emit('ice candidate', { candidate: data.candidate });
-    });
+    socket.on('answer call', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('call answered', { answer: data.answer }); });
+    socket.on('end call', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('call ended'); });
+    socket.on('ice candidate', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('ice candidate', { candidate: data.candidate }); });
 });
 
 const PORT = process.env.PORT || 8000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
-});
+server.listen(PORT, '0.0.0.0', () => { console.log(`Сервер запущен на порту ${PORT}`); });
