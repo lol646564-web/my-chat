@@ -242,7 +242,6 @@
             
             .chat-header { padding: 12px 15px; padding-top: env(safe-area-inset-top); }
             
-            /* Красивая иконка меню */
             .mobile-menu-btn { 
                 display: flex !important; 
                 font-size: 24px; 
@@ -421,7 +420,6 @@
         <!-- Чат -->
         <div id="chat-block" class="main-content hidden">
             <div class="chat-header">
-                <!-- Заменил стрелку на красивое гамбургер-меню -->
                 <button class="icon-btn mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <div style="text-align: center; flex: 1;">
                     <h1 id="room-title">Общий чат</h1>
@@ -815,8 +813,11 @@
             let authorHtml = msg.user !== currentUser ? `<div class="message-author" onclick="openProfile('${msg.user}')">${msg.user}</div>` : "";
             
             let replyHtml = "";
-            if (msg.replyTo) {
-                replyHtml = `<div class="reply-preview"><span class="reply-preview-author">Ответ на сообщение</span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Текст исходного сообщения...</span></div>`;
+            if (msg.replyTo && msg.replyText) {
+                replyHtml = `<div class="reply-preview">
+                    <span class="reply-preview-author">${msg.replyUser}</span>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${msg.replyText}</span>
+                </div>`;
             }
 
             let contentHtml = "";

@@ -24,7 +24,7 @@ const User = mongoose.model('User', UserSchema);
 
 const MessageSchema = new mongoose.Schema({
     id: String, user: String, message: String, room: String, avatar: String,
-    isMedia: Boolean, mediaUrl: String, mediaType: String, reactions: { type: Object, default: {} }, replyTo: String,
+    isMedia: Boolean, mediaUrl: String, mediaType: String, reactions: { type: Object, default: {} }, replyTo: String, replyText: String, replyUser: String,
     createdAt: { type: Date, default: Date.now }
 });
 const Message = mongoose.model('Message', MessageSchema);
@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
 
     socket.on('join room', async (roomName) => {
         socket.join(roomName);
-        const msgs = await Message.find({ room: roomName });
+        const msgs = await Message.find({ room: roomName }).sort({ createdAt: 1 });
         socket.emit('room history', msgs);
     });
 
@@ -225,10 +225,20 @@ io.on('connection', (socket) => {
 
     socket.on('chat message', async (data) => {
         const user = await User.findOne({ username: data.user });
+        let replyText = null, replyUser = null;
+        if (data.replyTo) {
+            const originalMsg = await Message.findOne({ id: data.replyTo });
+            if (originalMsg) {
+                replyUser = originalMsg.user;
+                replyText = originalMsg.message || (originalMsg.isMedia ? 'Медиафайл' : '');
+            }
+        }
+
         const msg = new Message({
             id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
             user: data.user, message: data.message, room: data.room,
-            avatar: user ? user.avatar : null, isMedia: false, reactions: {}, replyTo: data.replyTo || null
+            avatar: user ? user.avatar : null, isMedia: false, reactions: {}, 
+            replyTo: data.replyTo || null, replyText, replyUser
         });
         await msg.save();
         io.to(data.room).emit('chat message', msg);
@@ -236,10 +246,20 @@ io.on('connection', (socket) => {
 
     socket.on('send media', async (data) => {
         const user = await User.findOne({ username: data.user });
+        let replyText = null, replyUser = null;
+        if (data.replyTo) {
+            const originalMsg = await Message.findOne({ id: data.replyTo });
+            if (originalMsg) {
+                replyUser = originalMsg.user;
+                replyText = originalMsg.message || (originalMsg.isMedia ? 'Медиафайл' : '');
+            }
+        }
+
         const msg = new Message({
             id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
             user: data.user, message: data.caption || '', room: data.room,
-            avatar: user ? user.avatar : null, isMedia: true, mediaUrl: data.url, mediaType: data.type, reactions: {}, replyTo: data.replyTo || null
+            avatar: user ? user.avatar : null, isMedia: true, mediaUrl: data.url, mediaType: data.type, reactions: {}, 
+            replyTo: data.replyTo || null, replyText, replyUser
         });
         await msg.save();
         io.to(data.room).emit('chat message', msg);
@@ -259,9 +279,17 @@ io.on('connection', (socket) => {
         if (msg) {
             let reactions = msg.reactions || {};
             if (!reactions[data.emoji]) reactions[data.emoji] = [];
+            
             const idx = reactions[data.emoji].indexOf(currentUser);
-            if (idx === -1) reactions[data.emoji].push(currentUser);
-            else { reactions[data.emoji].splice(idx, 1); if (reactions[data.emoji].length === 0) delete reactions[data.emoji]; }
+            if (idx === -1) {
+                // Если юзера нет в списке -> добавляем (теперь счетчик увеличивается)
+                reactions[data.emoji].push(currentUser);
+            } else {
+                // Если юзер уже нажимал -> убираем (счетчик уменьшается)
+                reactions[data.emoji].splice(idx, 1); 
+                if (reactions[data.emoji].length === 0) delete reactions[data.emoji];
+            }
+            
             msg.reactions = reactions;
             await msg.save();
             io.to(msg.room).emit('update reaction', { messageId: msg.id, reactions: reactions });
