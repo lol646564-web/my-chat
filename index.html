@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cadely</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#007bff">
+    <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="/cadelylogo.jpg">
     <script src="/socket.io/socket.io.js"></script>
     <style>
         /* --- ПЕРЕМЕННЫЕ (Светлая тема) --- */
         :root {
-            --bg-body: #f4f6f9;
+            --bg-body: #ffffff; /* Убрал синий фон, теперь белый */
             --panel-bg: #ffffff;
             --text-main: #1e1e1e;
             --text-muted: #8e9297;
@@ -57,10 +57,10 @@
             transition: background 0.3s, color 0.3s;
         }
         
-        #app-container { display: flex; width: 100%; height: 100%; overflow: hidden; position: relative; }
+        #app-container { display: flex; width: 100%; height: 100%; overflow: hidden; position: relative; background: var(--panel-bg); }
         .hidden { display: none !important; }
 
-        /* --- САЙДБАР (Анимация выезда) --- */
+        /* --- САЙДБАР --- */
         #sidebar { 
             width: 320px; border-right: 1px solid var(--border-color); 
             background: var(--sidebar-bg); display: flex; flex-direction: column; 
@@ -89,16 +89,22 @@
         /* --- ОСНОВНОЙ КОНТЕНТ --- */
         .main-content { flex: 1; padding: 0; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
         
+        /* Выравниваем шапку по центру */
         .chat-header { 
             padding: 15px 25px; background: var(--panel-bg); 
             border-bottom: 1px solid var(--border-color); 
-            display: flex; justify-content: space-between; align-items: center; 
+            display: flex; align-items: center; 
             flex-shrink: 0; z-index: 10; 
             transition: background 0.3s;
+            position: relative; /* Для абсолютного позиционирования кнопок */
         }
-        .chat-header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-        .chat-header h3 { font-size: 13px; color: var(--text-muted); margin: 0; font-weight: normal; margin-top: 2px;}
-        .header-controls { display: flex; gap: 8px; align-items: center; }
+        .chat-header h1 { font-size: 18px; margin: 0; font-weight: 600; text-align: center; flex: 1; }
+        .chat-header h3 { font-size: 13px; color: var(--text-muted); margin: 0; font-weight: normal; text-align: center; }
+        
+        .header-controls { 
+            position: absolute; right: 20px; 
+            display: flex; gap: 8px; align-items: center; 
+        }
         .icon-btn { background: none; border: none; font-size: 22px; cursor: pointer; padding: 8px; border-radius: 50%; color: var(--text-main); display: flex; justify-content: center; align-items: center; transition: background 0.2s; }
         .icon-btn:hover { background: var(--sidebar-hover); }
 
@@ -204,6 +210,7 @@
         }
         @media (max-width: 600px) {
             #app-container { flex-direction: column; height: 100dvh; }
+            
             /* Анимация выезда сайдбара */
             #sidebar { 
                 position: absolute; top: 0; bottom: 0; left: 0; width: 85%; max-width: 320px; 
@@ -213,8 +220,22 @@
             #sidebar.open { transform: translateX(0); }
             #sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 900; transition: opacity 0.3s; }
             #sidebar-overlay.active { display: block; }
+            
             .chat-header { padding: 12px 15px; padding-top: env(safe-area-inset-top); }
-            .mobile-menu-btn { display: flex !important; font-size: 26px; margin-right: 10px; align-items: center; }
+            
+            /* Стильная круглая стрелка */
+            .mobile-menu-btn { 
+                display: flex !important; 
+                font-size: 20px; 
+                margin-right: 10px; 
+                align-items: center;
+                background: var(--sidebar-hover);
+                width: 36px; height: 36px;
+                border-radius: 50%;
+                justify-content: center;
+                padding: 0;
+            }
+            
             #chat-box { padding: 15px; height: calc(100dvh - 60px - 70px); }
             .message-row { max-width: 85%; }
             .chat-input-area { padding: 10px 12px; padding-bottom: env(safe-area-inset-bottom); }
@@ -243,7 +264,7 @@
         .auth-logo {
             width: 120px;
             height: 120px;
-            border-radius: 30px; /* Квадрат с мягкими углами, как на иконке iOS */
+            border-radius: 30px; 
             object-fit: cover;
             margin-bottom: 15px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.15);
@@ -377,12 +398,10 @@
         <!-- Чат -->
         <div id="chat-block" class="main-content hidden">
             <div class="chat-header">
-                <div style="display: flex; align-items: center;">
-                    <button class="icon-btn mobile-menu-btn" onclick="toggleSidebar()">←</button>
-                    <div>
-                        <h1 id="room-title">Общий чат</h1>
-                        <h3 id="typing-status"></h3>
-                    </div>
+                <button class="icon-btn mobile-menu-btn" onclick="toggleSidebar()">←</button>
+                <div style="text-align: center; flex: 1;">
+                    <h1 id="room-title">Общий чат</h1>
+                    <h3 id="typing-status"></h3>
                 </div>
                 <div class="header-controls">
                     <button id="call-btn" class="icon-btn" onclick="startCall()" style="color: #4CAF50; display: none;">📹</button>
@@ -438,7 +457,7 @@
     </div>
 
     <script>
-        // (Весь JS остается без изменений, чтобы всё работало)
+        // (Весь JS остается без изменений)
         const socket = io();
         let currentUser = "";
         let currentRoom = "general";
