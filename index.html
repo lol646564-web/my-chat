@@ -11,7 +11,7 @@
     <style>
         /* --- ПЕРЕМЕННЫЕ (Светлая тема) --- */
         :root {
-            --bg-body: #ffffff; /* Убрал синий фон, теперь белый */
+            --bg-body: #ffffff; /* Белый фон, убираем синие края */
             --panel-bg: #ffffff;
             --text-main: #1e1e1e;
             --text-muted: #8e9297;
@@ -53,7 +53,7 @@
             color: var(--text-main); 
             height: 100vh; height: 100dvh; 
             display: flex; overflow: hidden; 
-            background: var(--bg-body); 
+            background: var(--bg-body); /* Убирает синие полосы */
             transition: background 0.3s, color 0.3s;
         }
         
@@ -89,20 +89,19 @@
         /* --- ОСНОВНОЙ КОНТЕНТ --- */
         .main-content { flex: 1; padding: 0; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
         
-        /* Выравниваем шапку по центру */
         .chat-header { 
-            padding: 15px 25px; background: var(--panel-bg); 
+            padding: 15px 20px; background: var(--panel-bg); 
             border-bottom: 1px solid var(--border-color); 
-            display: flex; align-items: center; 
+            display: flex; justify-content: center; align-items: center; 
             flex-shrink: 0; z-index: 10; 
             transition: background 0.3s;
-            position: relative; /* Для абсолютного позиционирования кнопок */
+            position: relative; 
         }
-        .chat-header h1 { font-size: 18px; margin: 0; font-weight: 600; text-align: center; flex: 1; }
+        .chat-header h1 { font-size: 18px; margin: 0; font-weight: 600; text-align: center; }
         .chat-header h3 { font-size: 13px; color: var(--text-muted); margin: 0; font-weight: normal; text-align: center; }
         
         .header-controls { 
-            position: absolute; right: 20px; 
+            position: absolute; right: 15px; 
             display: flex; gap: 8px; align-items: center; 
         }
         .icon-btn { background: none; border: none; font-size: 22px; cursor: pointer; padding: 8px; border-radius: 50%; color: var(--text-main); display: flex; justify-content: center; align-items: center; transition: background 0.2s; }
@@ -211,7 +210,6 @@
         @media (max-width: 600px) {
             #app-container { flex-direction: column; height: 100dvh; }
             
-            /* Анимация выезда сайдбара */
             #sidebar { 
                 position: absolute; top: 0; bottom: 0; left: 0; width: 85%; max-width: 320px; 
                 transform: translateX(-100%); box-shadow: 10px 0 30px rgba(0,0,0,0.2); z-index: 1000; 
@@ -223,18 +221,22 @@
             
             .chat-header { padding: 12px 15px; padding-top: env(safe-area-inset-top); }
             
-            /* Стильная круглая стрелка */
+            /* Круглая, жирная стрелка */
             .mobile-menu-btn { 
                 display: flex !important; 
-                font-size: 20px; 
+                font-size: 24px; 
+                font-weight: 900;
                 margin-right: 10px; 
                 align-items: center;
                 background: var(--sidebar-hover);
-                width: 36px; height: 36px;
+                width: 38px; height: 38px;
                 border-radius: 50%;
                 justify-content: center;
                 padding: 0;
+                position: absolute;
+                left: 15px;
             }
+            .chat-header h1 { text-align: center; width: 100%; }
             
             #chat-box { padding: 15px; height: calc(100dvh - 60px - 70px); }
             .message-row { max-width: 85%; }
@@ -457,7 +459,6 @@
     </div>
 
     <script>
-        // (Весь JS остается без изменений)
         const socket = io();
         let currentUser = "";
         let currentRoom = "general";
