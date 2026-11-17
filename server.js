@@ -12,6 +12,7 @@ mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB подключена!'))
     .catch(err => console.error('Ошибка подключения к MongoDB:', err));
 
+// Схемы
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: String,
@@ -31,10 +32,11 @@ const MessageSchema = new mongoose.Schema({
 const Message = mongoose.model('Message', MessageSchema);
 
 const GroupSchema = new mongoose.Schema({
-    id: { type: String, unique: true }, name: String, members: [String]
+    id: { type: String, unique: true }, name: String, members: [String], lastMessage: { type: String, default: "" }
 });
 const Group = mongoose.model('Group', GroupSchema);
 
+// Настройки сервера
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
@@ -83,7 +85,7 @@ const server = http.createServer((req, res) => {
         fs.readFile(filePath, (err, data) => {
             if (err) { res.writeHead(404); res.end('Not found'); return; }
             const ext = path.extname(filePath).toLowerCase();
-            const mimeTypes = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime' };
+            const mimeTypes = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime', '.webm': 'audio/webm', '.mp3': 'audio/mp3' };
             res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' }); res.end(data);
         });
     } else { res.writeHead(404); res.end('Страница не найдена'); }
@@ -159,7 +161,6 @@ io.on('connection', (socket) => {
     socket.on('update profile', async (data) => {
         const { oldUsername, newUsername, status, bio, avatar } = data;
         if (newUsername !== oldUsername && await User.findOne({ username: newUsername })) return socket.emit('profile error', 'Имя занято!');
-        
         await User.updateOne({ username: oldUsername }, { username: newUsername, status, bio, avatar });
         if (newUsername !== oldUsername) {
             await Message.updateMany({ user: oldUsername }, { user: newUsername });
@@ -219,9 +220,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('chat message', async (data) => {
-        // Анти-спам
         const now = Date.now();
-        if (now - lastMessageTime < 1500) return socket.emit('call error', 'Не так быстро! Анти-спам 1.5 сек.');
+        if (now - lastMessageTime < 1500) return socket.emit('call error', 'Анти-спам 1.5 сек.');
         lastMessageTime = now;
 
         const user = await User.findOne({ username: data.user });
@@ -232,6 +232,11 @@ io.on('connection', (socket) => {
         }
         const msg = new Message({ id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), user: data.user, message: data.message, room: data.room, avatar: user ? user.avatar : null, isMedia: false, replyTo: data.replyTo || null, replyText, replyUser });
         await msg.save();
+        
+        // Обновляем превью группы
+        if (data.room.startsWith('group_')) {
+            await Group.updateOne({ id: data.room }, { lastMessage: data.message });
+        }
         io.to(data.room).emit('chat message', msg);
     });
 
@@ -276,11 +281,7 @@ io.on('connection', (socket) => {
     socket.on('typing', (data) => socket.to(data.room).emit('user typing', data.user));
     socket.on('stop typing', (data) => socket.to(data.room).emit('user stop typing', data.user));
 
-    socket.on('call user', (data) => {
-        const target = activeCalls[data.to];
-        if (target) io.to(target).emit('incoming call', { from: data.from, offer: data.offer });
-        else socket.emit('call error', 'Пользователь не в сети');
-    });
+    socket.on('call user', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('incoming call', { from: data.from, offer: data.offer }); else socket.emit('call error', 'Пользователь не в сети'); });
     socket.on('answer call', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('call answered', { answer: data.answer }); });
     socket.on('end call', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('call ended'); });
     socket.on('ice candidate', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('ice candidate', { candidate: data.candidate }); });
