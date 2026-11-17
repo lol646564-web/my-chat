@@ -26,9 +26,9 @@
         .chat-item:hover { background: var(--sidebar-hover); }
         .chat-item.active { background: var(--sidebar-active); border-left: 4px solid var(--primary-color); }
         
-        .sidebar-avatar-wrapper { position: relative; width: 46px; height: 46px; flex-shrink: 0; }
+        .sidebar-avatar-wrapper { position: relative; width: 46px; height: 46px; flex-shrink: 0; border-radius: 50%; overflow: visible; }
         .sidebar-avatar { width: 100%; height: 100%; border-radius: 50%; background: #607d8b; color: white; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; overflow: hidden; }
-        .sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
         .online-dot { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; background: #4CAF50; border: 2px solid var(--sidebar-bg); border-radius: 50%; display: none; }
         .online-dot.active { display: block; }
         
@@ -47,6 +47,7 @@
         .chat-dropdown button.danger { color: #f44336; }
         
         .main-content { flex: 1; padding: 0; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        
         .chat-header { padding: 15px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 10; transition: background 0.3s; position: relative; gap: 10px; }
         .chat-header > div { flex: 1; text-align: center; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
         .chat-header h1 { font-size: 18px; margin: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -61,8 +62,10 @@
         .message-row { display: flex; align-items: flex-end; gap: 10px; max-width: 75%; position: relative; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-row.own { align-self: flex-end; flex-direction: row-reverse; }
-        .msg-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #4CAF50; color: white; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; }
-        .msg-avatar img { width: 100%; height: 100%; border-radius: 50%; }
+        
+        .msg-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #4CAF50; color: white; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; overflow: hidden; }
+        .msg-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        
         .message-wrapper { display: flex; flex-direction: column; max-width: 100%; position: relative; }
         .message-content { background: var(--other-msg-bg); padding: 10px 14px; border-radius: 18px; border-bottom-left-radius: 4px; box-shadow: var(--shadow); position: relative; cursor: pointer; transition: transform 0.1s; }
         .message-content:active { transform: scale(0.98); }
@@ -73,7 +76,15 @@
         .message-time { font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 4px; display: block; }
         
         .msg-media { max-width: 100%; max-height: 250px; border-radius: 12px; margin-top: 8px; display: block; }
-        .msg-audio { max-width: 100%; width: 250px; margin-top: 8px; display: block; }
+        
+        /* КРАСИВЫЙ ПЛЕЕР ДЛЯ ГОЛОСОВЫХ */
+        .voice-player { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 20px; margin-top: 6px; width: 220px; }
+        body.dark-theme .voice-player { background: rgba(255,255,255,0.1); }
+        .voice-play-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-color); color: white; border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+        .voice-progress { flex: 1; height: 4px; background: rgba(0,0,0,0.2); border-radius: 2px; position: relative; cursor: pointer; }
+        body.dark-theme .voice-progress { background: rgba(255,255,255,0.2); }
+        .voice-progress-bar { height: 100%; background: var(--primary-color); border-radius: 2px; width: 0%; transition: width 0.1s linear; }
+        .voice-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
         
         .reactions-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-left: 2px; }
         .reaction-badge { display: flex; align-items: center; gap: 4px; background: var(--panel-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 12px; font-size: 13px; cursor: pointer; transition: transform 0.2s; }
@@ -95,7 +106,6 @@
         .send-btn-inline { background: var(--primary-color); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 18px; margin-left: 6px; transition: transform 0.1s, background 0.2s; }
         .send-btn-inline:active { transform: scale(0.9); }
         
-        /* Стили для записи голоса */
         .mic-btn.recording { color: #f44336; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
@@ -123,7 +133,7 @@
         @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
         @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
 
-        /* Панель действий с сообщением (Bottom Sheet) */
+        /* Панель действий с сообщением */
         #action-sheet { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2500; display: none; justify-content: center; align-items: flex-end; }
         #action-sheet.active { display: flex; }
         .action-sheet-content { background: var(--panel-bg); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 20px; display: flex; flex-direction: column; gap: 15px; animation: slideUp 0.2s ease-out; }
@@ -146,8 +156,16 @@
             #sidebar.open { transform: translateX(0); }
             #sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 900; transition: opacity 0.3s; }
             #sidebar-overlay.active { display: block; }
-            .chat-header { padding: 12px 15px; padding-top: env(safe-area-inset-top); }
-            .mobile-menu-btn { display: flex !important; font-size: 24px; align-items: center; background: var(--sidebar-hover); width: 38px; height: 38px; border-radius: 50%; justify-content: center; padding: 0; flex-shrink: 0; }
+            
+            .chat-header { padding: 10px 12px; padding-top: env(safe-area-inset-top); gap: 5px; }
+            .chat-header h1 { font-size: 16px; }
+            .chat-header h3 { font-size: 12px; }
+            .icon-btn { font-size: 20px; padding: 6px; }
+            
+            /* ПОЧИНИЛИ КНОПКУ МЕНЮ */
+            .mobile-menu-btn { display: flex !important; font-size: 20px; align-items: center; background: none; border: none; width: 36px; height: 36px; border-radius: 50%; justify-content: center; padding: 0; flex-shrink: 0; color: var(--text-main); }
+            .mobile-menu-btn:hover { background: var(--sidebar-hover); }
+            
             #chat-box { padding: 15px; height: calc(100dvh - 60px - 70px); }
             .message-row { max-width: 85%; }
             .chat-input-area { padding: 10px 12px; padding-bottom: env(safe-area-inset-bottom); }
@@ -168,7 +186,6 @@
 <body>
     <div id="fullscreen-avatar" class="hidden" onclick="this.classList.add('hidden')"><img id="fs-img" src=""></div>
     
-    <!-- Панель действий с сообщением -->
     <div id="action-sheet" onclick="closeActionSheet(event)">
         <div class="action-sheet-content" onclick="event.stopPropagation()">
             <div class="action-reactions" id="action-reactions-container">
@@ -178,9 +195,7 @@
                 <span onclick="actionReaction('😮')">😮</span>
                 <span onclick="actionReaction('😢')">😢</span>
             </div>
-            <div class="action-buttons" id="action-buttons-container">
-                <!-- Кнопки будут добавлены через JS -->
-            </div>
+            <div class="action-buttons" id="action-buttons-container"></div>
         </div>
     </div>
 
@@ -276,7 +291,6 @@
                     <h3 id="typing-status"></h3>
                 </div>
                 <div class="header-controls">
-                    <button id="call-btn" class="icon-btn" onclick="startCall()" style="color: #4CAF50; display: none;">📹</button>
                     <button class="icon-btn" onclick="openSettingsModal()">⚙️</button>
                     <button class="icon-btn" onclick="openProfile(currentUser)">👤</button>
                 </div>
@@ -331,7 +345,6 @@
         let editMsgTargetId = null;
         let onlineUsersList = [];
 
-        // Медиарекордер для голосовых
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
@@ -345,7 +358,6 @@
 
         function showFullscreenAvatar() { if (profileData.avatar) { document.getElementById('fs-img').src = profileData.avatar; document.getElementById('fullscreen-avatar').classList.remove('hidden'); } }
 
-        // === ОНЛАЙН СТАТУС ===
         socket.on('online status', (users) => { onlineUsersList = users; updateOnlineUI(); });
         function updateOnlineUI() {
             document.querySelectorAll('.online-dot').forEach(dot => {
@@ -358,14 +370,12 @@
             }
         }
 
-        // === МЕНЮ ЧАТОВ ===
         function toggleChatMenu(event, roomId) {
             event.stopPropagation(); document.querySelectorAll('.chat-dropdown').forEach(m => m.classList.remove('active'));
             const d = document.getElementById('dropdown-' + roomId); if (d) d.classList.toggle('active');
         }
         document.addEventListener('click', () => { document.querySelectorAll('.chat-dropdown').forEach(m => m.classList.remove('active')); });
 
-        // === СПИСОК ЧАТОВ ===
         socket.on('room list', (rooms) => {
             const chatList = document.getElementById('chat-list'); chatList.innerHTML = '';
             const sortedRooms = rooms.sort((a, b) => { if (a === 'general') return -1; if (b === 'general') return 1; return 0; });
@@ -416,13 +426,45 @@
 
         function switchRoom(room) {
             currentRoom = room;
-            if (room === 'general') { document.getElementById('room-title').innerText = "Общий чат"; document.getElementById('call-btn').style.display = 'none'; }
+            if (room === 'general') { document.getElementById('room-title').innerText = "Общий чат"; }
             else {
                 const parts = room.split('_');
-                if (parts.length === 2 && !room.startsWith('group_')) { document.getElementById('room-title').innerText = parts.find(p => p !== currentUser); document.getElementById('call-btn').style.display = 'none'; }
-                else { socket.emit('get room name', room); document.getElementById('call-btn').style.display = 'none'; }
+                if (parts.length === 2 && !room.startsWith('group_')) { document.getElementById('room-title').innerText = parts.find(p => p !== currentUser); }
+                else { socket.emit('get room name', room); }
             }
             socket.emit('join room', room); closeProfile(); cancelReply();
+        }
+
+        // === КРАСИВЫЙ ПЛЕЕР ГОЛОСОВЫХ ===
+        function playAudio(id, btn) {
+            const audio = document.getElementById('audio-' + id);
+            if (audio.paused) {
+                document.querySelectorAll('audio').forEach(a => a.pause()); // Останавливаем другие
+                audio.play();
+                btn.innerText = "⏸️";
+            } else {
+                audio.pause();
+                btn.innerText = "▶️";
+            }
+        }
+        function updateAudioProgress(id, barId) {
+            const audio = document.getElementById('audio-' + id);
+            const bar = document.getElementById(barId);
+            if (audio.duration) bar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
+        }
+        function seekAudio(e, id) {
+            const audio = document.getElementById('audio-' + id);
+            const rect = e.target.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = percent * audio.duration;
+        }
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60); const s = Math.floor(sec % 60);
+            return m + ':' + (s < 10 ? '0' : '') + s;
+        }
+        function setAudioDuration(id, elId) {
+            const audio = document.getElementById('audio-' + id);
+            if (audio.duration) document.getElementById(elId).innerText = formatTime(audio.duration);
         }
 
         // === ЗАПИСЬ ГОЛОСА ===
@@ -456,21 +498,16 @@
             }
         }
 
-        // === ПАНЕЛЬ ДЕЙСТВИЙ С СООБЩЕНИЕМ ===
         function openActionSheet(msgId, msgUser, msgText, isMedia) {
             reactionTargetMessageId = msgId;
-            
-            // Настраиваем кнопки
             const btnsContainer = document.getElementById('action-buttons-container');
             btnsContainer.innerHTML = '';
             
-            // Кнопка ответа
             const replyBtn = document.createElement('button');
             replyBtn.innerHTML = '↩️ Ответить';
             replyBtn.onclick = () => { startReply(msgId, msgUser, msgText); closeActionSheet(); };
             btnsContainer.appendChild(replyBtn);
 
-            // Кнопка изменения (только для своих и не медиа)
             if (msgUser === currentUser && !isMedia) {
                 const editBtn = document.createElement('button');
                 editBtn.innerHTML = '✏️ Изменить';
@@ -478,7 +515,6 @@
                 btnsContainer.appendChild(editBtn);
             }
 
-            // Кнопка удаления
             const deleteBtn = document.createElement('button');
             deleteBtn.innerHTML = '🗑️ Удалить';
             deleteBtn.className = 'danger';
@@ -488,15 +524,8 @@
             document.getElementById('action-sheet').classList.add('active');
         }
         
-        function closeActionSheet(e) {
-            if (e && e.target !== e.currentTarget) return;
-            document.getElementById('action-sheet').classList.remove('active');
-        }
-        function actionReaction(emoji) {
-            if (!reactionTargetMessageId) return;
-            socket.emit('add reaction', { messageId: reactionTargetMessageId, emoji: emoji, user: currentUser });
-            closeActionSheet();
-        }
+        function closeActionSheet(e) { if (e && e.target !== e.currentTarget) return; document.getElementById('action-sheet').classList.remove('active'); }
+        function actionReaction(emoji) { if (!reactionTargetMessageId) return; socket.emit('add reaction', { messageId: reactionTargetMessageId, emoji: emoji, user: currentUser }); closeActionSheet(); }
 
         function sendMessage() {
             const text = document.getElementById('textInput').value; if (!text || !currentUser) return;
@@ -516,7 +545,17 @@
             if (msg.isMedia) { 
                 if (msg.mediaType && msg.mediaType.startsWith('image/')) contentHtml = `<br><a href="${msg.mediaUrl}" target="_blank"><img src="${msg.mediaUrl}" class="msg-media"></a>`; 
                 else if (msg.mediaType && msg.mediaType.startsWith('video/')) contentHtml = `<br><video src="${msg.mediaUrl}" class="msg-media" controls playsinline></video>`; 
-                else if (msg.mediaType && msg.mediaType.startsWith('audio/')) contentHtml = `<br><audio src="${msg.mediaUrl}" class="msg-audio" controls></audio>`;
+                else if (msg.mediaType && msg.mediaType.startsWith('audio/')) {
+                    contentHtml = `
+                    <div class="voice-player">
+                        <button class="voice-play-btn" onclick="playAudio('${msg.id}', this)">▶️</button>
+                        <div class="voice-progress" onclick="seekAudio(event, '${msg.id}')">
+                            <div class="voice-progress-bar" id="bar-${msg.id}"></div>
+                        </div>
+                        <span class="voice-time" id="time-${msg.id}">0:00</span>
+                        <audio id="audio-${msg.id}" src="${msg.mediaUrl}" ontimeupdate="updateAudioProgress('${msg.id}', 'bar-${msg.id}')" onloadedmetadata="setAudioDuration('${msg.id}', 'time-${msg.id}')" onended="document.querySelector('button[onclick=\\'playAudio(\\'${msg.id}\\', this)\\']').innerText='▶️'"></audio>
+                    </div>`;
+                }
             }
             if (msg.message) contentHtml = msg.message + contentHtml;
             
@@ -526,7 +565,6 @@
             
             const editedMark = msg.edited ? `<span style="font-size:10px; color:#888; margin-right:5px;">(изм.)</span>` : '';
             
-            // Вместо inline кнопок теперь вызываем нижнюю панель при клике на сообщение
             row.innerHTML = `${avatarHtml} <div class="message-wrapper"><div class="message-content" onclick="openActionSheet('${msg.id}', '${msg.user}', '${msg.message ? msg.message.replace(/'/g, "\\'") : ''}', ${msg.isMedia})">${replyHtml}${authorHtml}<div class="message-text" id="text-${msg.id}">${contentHtml}</div><span class="message-time">${editedMark}${timeString}</span></div>${reactionsHtml}</div>`;
             chatBox.appendChild(row); chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -536,7 +574,6 @@
             if (msg.room === currentRoom) renderMessage(msg);
             if (msg.user !== currentUser) socket.emit('get rooms', currentUser);
             
-            // Обновляем превью в сайдбаре
             const preview = document.getElementById('chat-preview-' + msg.room);
             if (preview) preview.innerText = msg.isMedia ? (msg.mediaType.startsWith('audio') ? "🎤 Голосовое" : "🖼️ Медиа") : msg.message;
 
