@@ -48,13 +48,14 @@
         
         .main-content { flex: 1; padding: 0; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
         
-        .chat-header { padding: 15px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 10; transition: background 0.3s; position: relative; gap: 10px; }
-        .chat-header > div { flex: 1; text-align: center; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
-        .chat-header h1 { font-size: 18px; margin: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chat-header h3 { font-size: 13px; color: var(--text-muted); margin: 0; font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* ИСПРАВЛЕННАЯ ШАПКА */
+        .chat-header { padding: 10px 15px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 10; transition: background 0.3s; position: relative; height: 60px; }
+        .chat-header > div { flex: 1; text-align: center; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 10px; }
+        .chat-header h1 { font-size: 17px; margin: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+        .chat-header h3 { font-size: 12px; color: var(--text-muted); margin: 0; font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
         
-        .header-controls { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
-        .icon-btn { background: none; border: none; font-size: 22px; cursor: pointer; padding: 8px; border-radius: 50%; color: var(--text-main); display: flex; justify-content: center; align-items: center; transition: background 0.2s; }
+        .header-controls { display: flex; gap: 2px; align-items: center; flex-shrink: 0; }
+        .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; color: var(--text-main); display: flex; justify-content: center; align-items: center; transition: background 0.2s; }
         .icon-btn:hover { background: var(--sidebar-hover); }
 
         #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: var(--chat-bg); transition: background 0.3s; }
@@ -78,7 +79,7 @@
         .msg-media { max-width: 100%; max-height: 250px; border-radius: 12px; margin-top: 8px; display: block; }
         
         /* КРАСИВЫЙ ПЛЕЕР ДЛЯ ГОЛОСОВЫХ */
-        .voice-player { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 20px; margin-top: 6px; width: 220px; }
+        .voice-player { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 20px; margin-top: 6px; width: 220px; user-select: none; }
         body.dark-theme .voice-player { background: rgba(255,255,255,0.1); }
         .voice-play-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-color); color: white; border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 14px; flex-shrink: 0; }
         .voice-progress { flex: 1; height: 4px; background: rgba(0,0,0,0.2); border-radius: 2px; position: relative; cursor: pointer; }
@@ -133,7 +134,6 @@
         @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
         @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
 
-        /* Панель действий с сообщением */
         #action-sheet { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2500; display: none; justify-content: center; align-items: flex-end; }
         #action-sheet.active { display: flex; }
         .action-sheet-content { background: var(--panel-bg); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 20px; display: flex; flex-direction: column; gap: 15px; animation: slideUp 0.2s ease-out; }
@@ -157,13 +157,12 @@
             #sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 900; transition: opacity 0.3s; }
             #sidebar-overlay.active { display: block; }
             
-            .chat-header { padding: 10px 12px; padding-top: env(safe-area-inset-top); gap: 5px; }
+            .chat-header { padding: 10px 5px; padding-top: env(safe-area-inset-top); }
             .chat-header h1 { font-size: 16px; }
-            .chat-header h3 { font-size: 12px; }
-            .icon-btn { font-size: 20px; padding: 6px; }
+            .chat-header > div { padding: 0 5px; }
+            .icon-btn { padding: 6px; font-size: 22px; }
             
-            /* ПОЧИНИЛИ КНОПКУ МЕНЮ */
-            .mobile-menu-btn { display: flex !important; font-size: 20px; align-items: center; background: none; border: none; width: 36px; height: 36px; border-radius: 50%; justify-content: center; padding: 0; flex-shrink: 0; color: var(--text-main); }
+            .mobile-menu-btn { display: flex !important; font-size: 24px; align-items: center; background: none; border: none; width: 40px; height: 40px; border-radius: 50%; justify-content: center; padding: 0; flex-shrink: 0; color: var(--text-main); }
             .mobile-menu-btn:hover { background: var(--sidebar-hover); }
             
             #chat-box { padding: 15px; height: calc(100dvh - 60px - 70px); }
@@ -436,10 +435,10 @@
         }
 
         // === КРАСИВЫЙ ПЛЕЕР ГОЛОСОВЫХ ===
-        function playAudio(id, btn) {
+        function togglePlayAudio(id, btn) {
             const audio = document.getElementById('audio-' + id);
             if (audio.paused) {
-                document.querySelectorAll('audio').forEach(a => a.pause()); // Останавливаем другие
+                document.querySelectorAll('audio').forEach(a => { if(a.id !== 'audio-'+id) a.pause(); });
                 audio.play();
                 btn.innerText = "⏸️";
             } else {
@@ -450,21 +449,31 @@
         function updateAudioProgress(id, barId) {
             const audio = document.getElementById('audio-' + id);
             const bar = document.getElementById(barId);
-            if (audio.duration) bar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
+            if (audio.duration) {
+                bar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
+                document.getElementById('curtime-' + id).innerText = formatTime(audio.currentTime);
+            }
         }
         function seekAudio(e, id) {
+            e.stopPropagation(); // Запрещаем открывать панель действий
             const audio = document.getElementById('audio-' + id);
-            const rect = e.target.getBoundingClientRect();
+            const rect = e.currentTarget.getBoundingClientRect();
             const percent = (e.clientX - rect.left) / rect.width;
             audio.currentTime = percent * audio.duration;
         }
         function formatTime(sec) {
+            if (isNaN(sec)) return '0:00';
             const m = Math.floor(sec / 60); const s = Math.floor(sec % 60);
             return m + ':' + (s < 10 ? '0' : '') + s;
         }
         function setAudioDuration(id, elId) {
             const audio = document.getElementById('audio-' + id);
             if (audio.duration) document.getElementById(elId).innerText = formatTime(audio.duration);
+        }
+        function audioEnded(id, btn) {
+            btn.innerText = "▶️";
+            document.getElementById('bar-' + id).style.width = '0%';
+            document.getElementById('curtime-' + id).innerText = '0:00';
         }
 
         // === ЗАПИСЬ ГОЛОСА ===
@@ -543,17 +552,17 @@
             
             let contentHtml = ""; 
             if (msg.isMedia) { 
-                if (msg.mediaType && msg.mediaType.startsWith('image/')) contentHtml = `<br><a href="${msg.mediaUrl}" target="_blank"><img src="${msg.mediaUrl}" class="msg-media"></a>`; 
+                if (msg.mediaType && msg.mediaType.startsWith('image/')) contentHtml = `<br><a href="${msg.mediaUrl}" target="_blank"><img src="${msg.mediaUrl}" class="msg-media" onerror="this.style.display='none'"></a>`; 
                 else if (msg.mediaType && msg.mediaType.startsWith('video/')) contentHtml = `<br><video src="${msg.mediaUrl}" class="msg-media" controls playsinline></video>`; 
                 else if (msg.mediaType && msg.mediaType.startsWith('audio/')) {
                     contentHtml = `
-                    <div class="voice-player">
-                        <button class="voice-play-btn" onclick="playAudio('${msg.id}', this)">▶️</button>
+                    <div class="voice-player" onclick="event.stopPropagation(); openActionSheet('${msg.id}', '${msg.user}', '', true)">
+                        <button class="voice-play-btn" onclick="event.stopPropagation(); togglePlayAudio('${msg.id}', this)">▶️</button>
                         <div class="voice-progress" onclick="seekAudio(event, '${msg.id}')">
                             <div class="voice-progress-bar" id="bar-${msg.id}"></div>
                         </div>
-                        <span class="voice-time" id="time-${msg.id}">0:00</span>
-                        <audio id="audio-${msg.id}" src="${msg.mediaUrl}" ontimeupdate="updateAudioProgress('${msg.id}', 'bar-${msg.id}')" onloadedmetadata="setAudioDuration('${msg.id}', 'time-${msg.id}')" onended="document.querySelector('button[onclick=\\'playAudio(\\'${msg.id}\\', this)\\']').innerText='▶️'"></audio>
+                        <span class="voice-time"><span id="curtime-${msg.id}">0:00</span> / <span id="durtime-${msg.id}">0:00</span></span>
+                        <audio id="audio-${msg.id}" src="${msg.mediaUrl}" ontimeupdate="updateAudioProgress('${msg.id}', 'bar-${msg.id}')" onloadedmetadata="setAudioDuration('${msg.id}', 'durtime-${msg.id}')" onended="audioEnded('${msg.id}', this.previousElementSibling.previousElementSibling.previousElementSibling)"></audio>
                     </div>`;
                 }
             }
@@ -565,7 +574,7 @@
             
             const editedMark = msg.edited ? `<span style="font-size:10px; color:#888; margin-right:5px;">(изм.)</span>` : '';
             
-            row.innerHTML = `${avatarHtml} <div class="message-wrapper"><div class="message-content" onclick="openActionSheet('${msg.id}', '${msg.user}', '${msg.message ? msg.message.replace(/'/g, "\\'") : ''}', ${msg.isMedia})">${replyHtml}${authorHtml}<div class="message-text" id="text-${msg.id}">${contentHtml}</div><span class="message-time">${editedMark}${timeString}</span></div>${reactionsHtml}</div>`;
+            row.innerHTML = `${avatarHtml} <div class="message-wrapper"><div class="message-content" onclick="if(!event.target.closest('.voice-player') && !event.target.closest('.reaction-badge')) openActionSheet('${msg.id}', '${msg.user}', '${msg.message ? msg.message.replace(/'/g, "\\'") : ''}', ${msg.isMedia})">${replyHtml}${authorHtml}<div class="message-text" id="text-${msg.id}">${contentHtml}</div><span class="message-time">${editedMark}${timeString}</span></div>${reactionsHtml}</div>`;
             chatBox.appendChild(row); chatBox.scrollTop = chatBox.scrollHeight;
         }
 
