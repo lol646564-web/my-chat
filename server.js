@@ -14,18 +14,19 @@ mongoose.connect(MONGO_URI)
 
 // Схемы
 const UserSchema = new mongoose.Schema({
-    username: { type: String, unique: true, required: true },
+    username: { type: String, unique: true, required: true }, // Логин (уникальный)
+    displayName: { type: String, required: true }, // Отображаемое имя (любое)
     password: String,
     status: { type: String, default: "Пользователь чата" },
     bio: { type: String, default: "" },
     avatar: { type: String, default: null },
-    profileStyle: { type: String, default: "classic" }, // Стиль профиля
+    profileStyle: { type: String, default: "classic" },
     lastSeen: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', UserSchema);
 
 const MessageSchema = new mongoose.Schema({
-    id: String, user: String, message: String, room: String, avatar: String,
+    id: String, user: String, userDisplayName: String, message: String, room: String, avatar: String,
     isMedia: Boolean, mediaUrl: String, mediaType: String, reactions: { type: Object, default: {} }, replyTo: String, replyText: String, replyUser: String,
     createdAt: { type: Date, default: Date.now },
     edited: { type: Boolean, default: false }
@@ -97,14 +98,19 @@ let onlineUsers = new Set();
 const activeCalls = {}; 
 
 io.on('connection', (socket) => {
-    let currentUser = null;
+    let currentUser = null; // Здесь хранится username
     let lastMessageTime = 0;
 
     socket.on('register', async (data) => {
         try {
-            const { username, password } = data;
-            if (await User.findOne({ username })) return socket.emit('auth error', 'Пользователь уже существует!');
-            const newUser = new User({ username, password: bcrypt.hashSync(password, 10), lastSeen: new Date() });
+            const { username, password, displayName } = data;
+            if (await User.findOne({ username })) return socket.emit('auth error', 'Этот юзернейм уже занят!');
+            const newUser = new User({ 
+                username, 
+                displayName: displayName || username, 
+                password: bcrypt.hashSync(password, 10), 
+                lastSeen: new Date() 
+            });
             await newUser.save();
             socket.emit('auth success', username);
         } catch (e) { socket.emit('auth error', 'Ошибка регистрации'); }
@@ -147,7 +153,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('get all users', async () => {
-        const users = await User.find({}, 'username avatar');
+        const users = await User.find({}, 'username displayName avatar');
         socket.emit('all users list', users);
     });
 
@@ -155,17 +161,17 @@ io.on('connection', (socket) => {
         const user = await User.findOne({ username });
         if (!user) return socket.emit('profile error', 'Пользователь не найден');
         socket.emit('profile data', { 
-            username: user.username, status: user.status, bio: user.bio, avatar: user.avatar, 
-            profileStyle: user.profileStyle,
-            lastSeen: user.lastSeen, isOnline: onlineUsers.has(username)
+            username: user.username, displayName: user.displayName, status: user.status, bio: user.bio, avatar: user.avatar, 
+            profileStyle: user.profileStyle, lastSeen: user.lastSeen, isOnline: onlineUsers.has(username)
         });
     });
 
     socket.on('update profile', async (data) => {
-        const { oldUsername, newUsername, status, bio, avatar, profileStyle } = data;
-        if (newUsername !== oldUsername && await User.findOne({ username: newUsername })) return socket.emit('profile error', 'Имя занято!');
+        const { oldUsername, newUsername, displayName, status, bio, avatar, profileStyle } = data;
+        // newUsername - это логин, он должен быть уникальным. Если юзер меняет логин, проверяем.
+        if (newUsername !== oldUsername && await User.findOne({ username: newUsername })) return socket.emit('profile error', 'Юзернейм занят!');
         
-        await User.updateOne({ username: oldUsername }, { username: newUsername, status, bio, avatar, profileStyle });
+        await User.updateOne({ username: oldUsername }, { username: newUsername, displayName, status, bio, avatar, profileStyle });
         
         if (newUsername !== oldUsername) {
             await Message.updateMany({ user: oldUsername }, { user: newUsername });
@@ -184,6 +190,7 @@ io.on('connection', (socket) => {
         socket.emit('profile updated', newUsername);
     });
 
+    // Поиск теперь строго по username
     socket.on('check user', async (username) => {
         const user = await User.findOne({ username });
         if (!user) socket.emit('user not found', username); else socket.emit('user found', username);
@@ -219,7 +226,11 @@ io.on('connection', (socket) => {
         const group = await Group.findOne({ id: roomId });
         if (group) {
             let name = group.name;
-            if (name === 'ЛС') { name = roomId.split('_').find(p => p !== currentUser); }
+            if (name === 'ЛС') { 
+                const targetUser = roomId.split('_').find(p => p !== currentUser);
+                const user = await User.findOne({ username: targetUser });
+                name = user ? user.displayName : targetUser;
+            }
             socket.emit('room name', { roomId, name });
         }
     });
@@ -235,7 +246,18 @@ io.on('connection', (socket) => {
             const orig = await Message.findOne({ id: data.replyTo });
             if (orig) { replyUser = orig.user; replyText = orig.message || (orig.isMedia ? 'Медиафайл' : ''); }
         }
-        const msg = new Message({ id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), user: data.user, message: data.message, room: data.room, avatar: user ? user.avatar : null, isMedia: false, replyTo: data.replyTo || null, replyText, replyUser });
+        const msg = new Message({ 
+            id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), 
+            user: data.user, 
+            userDisplayName: user ? user.displayName : data.user,
+            message: data.message, 
+            room: data.room, 
+            avatar: user ? user.avatar : null, 
+            isMedia: false, 
+            replyTo: data.replyTo || null, 
+            replyText, 
+            replyUser 
+        });
         await msg.save();
         
         if (data.room.startsWith('group_')) {
@@ -251,7 +273,20 @@ io.on('connection', (socket) => {
             const orig = await Message.findOne({ id: data.replyTo });
             if (orig) { replyUser = orig.user; replyText = orig.message || (orig.isMedia ? 'Медиафайл' : ''); }
         }
-        const msg = new Message({ id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), user: data.user, message: data.caption || '', room: data.room, avatar: user ? user.avatar : null, isMedia: true, mediaUrl: data.url, mediaType: data.type, replyTo: data.replyTo || null, replyText, replyUser });
+        const msg = new Message({ 
+            id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), 
+            user: data.user, 
+            userDisplayName: user ? user.displayName : data.user,
+            message: data.caption || '', 
+            room: data.room, 
+            avatar: user ? user.avatar : null, 
+            isMedia: true, 
+            mediaUrl: data.url, 
+            mediaType: data.type, 
+            replyTo: data.replyTo || null, 
+            replyText, 
+            replyUser 
+        });
         await msg.save();
         io.to(data.room).emit('chat message', msg);
     });

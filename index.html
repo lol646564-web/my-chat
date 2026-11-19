@@ -125,7 +125,6 @@
         .mic-btn.recording { color: #f44336; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-        /* КНОПКА ВНИЗ */
         #scroll-bottom-btn { position: absolute; bottom: 80px; right: 20px; width: 44px; height: 44px; border-radius: 50%; background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-main); display: none; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 50; }
         #scroll-bottom-btn.active { display: flex; }
 
@@ -210,7 +209,6 @@
         .auth-card button { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.1s; }
         .auth-card button:active { transform: scale(0.98); }
 
-        /* ВЫБОР ЦВЕТА ПУЗЫРЕЙ */
         .color-options { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
         .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform 0.2s; }
         .color-option:hover { transform: scale(1.1); }
@@ -241,7 +239,7 @@
             <h2>Настройки</h2>
         </div>
         <div class="settings-content">
-            <div class="settings-profile-card" onclick="openProfile(currentUser)">
+            <div class="settings-profile-card" onclick="openEditModal()">
                 <img id="settings-bg-img" class="settings-profile-bg" src="" style="display: none;">
                 <div class="settings-profile-info">
                     <h3 id="settings-name">Имя</h3>
@@ -274,7 +272,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ОБОЕВ -->
     <div id="wallpaper-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Обои чата</h3>
@@ -288,7 +285,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ЦВЕТОВ -->
     <div id="color-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Цвет моих сообщений</h3>
@@ -307,7 +303,7 @@
     <div id="search-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Найти пользователя</h3>
-            <input type="text" id="search-input" placeholder="Введи имя...">
+            <input type="text" id="search-input" placeholder="Введи @юзернейм...">
             <button onclick="searchUser()" style="background: var(--primary-color); color: white; margin-bottom: 10px;">Найти</button>
             <button onclick="closeSearchModal()" style="background: #607d8b; color: white;">Закрыть</button>
         </div>
@@ -330,7 +326,13 @@
             <div id="edit-avatar-preview" class="avatar" style="margin: 0 auto 20px auto; width: 90px; height: 90px; font-size: 34px;">?</div>
             <input type="file" id="avatar-input" accept="image/*" style="display: none;" onchange="uploadAvatar()">
             <button onclick="document.getElementById('avatar-input').click()" style="background: #607d8b; color: white; margin-bottom: 15px;">Загрузить фото</button>
-            <input type="text" id="edit-name" placeholder="Никнейм">
+            
+            <label style="display: block; text-align: left; margin-bottom: 5px; font-size: 14px;">Юзернейм (@уникальный):</label>
+            <input type="text" id="edit-username" placeholder="@username">
+            
+            <label style="display: block; text-align: left; margin-bottom: 5px; font-size: 14px;">Отображаемое имя:</label>
+            <input type="text" id="edit-name" placeholder="Любое имя">
+            
             <input type="text" id="edit-status" placeholder="Статус (например: Люблю пиццу)">
             <textarea id="edit-bio" placeholder="О себе..." style="min-height: 80px; resize: vertical;"></textarea>
             
@@ -348,7 +350,6 @@
 
     <div id="profile-panel" class="modal-overlay hidden" onclick="closeProfile()">
         <div class="modal-content" onclick="event.stopPropagation()" style="padding: 0; overflow: hidden; background: var(--panel-bg);">
-            <!-- Фон для профиля (показывается, если стиль background) -->
             <div id="profile-bg-container" style="position: relative; width: 100%; height: 160px; display: none; background: #333;">
                 <img id="profile-bg-image" src="" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.7;">
                 <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
@@ -358,11 +359,11 @@
                 <button onclick="closeProfile()" class="icon-btn" style="position: absolute; top: 10px; right: 10px; color: white; z-index: 10;">✖</button>
             </div>
 
-            <!-- Классический вид -->
             <div id="profile-classic-container" style="padding: 30px 20px; display: flex; flex-direction: column; align-items: center;">
                 <button onclick="closeProfile()" class="icon-btn" style="align-self: flex-end; margin-bottom: -10px;">✖</button>
                 <div id="profile-avatar" class="avatar" style="margin: 0 auto 15px auto;" onclick="showFullscreenAvatar()">?</div>
                 <h2 id="profile-name" style="font-size: 24px; margin-bottom: 5px; font-weight: 700;">Имя</h2>
+                <p id="profile-username" style="color: var(--text-muted); font-size: 14px; font-weight: 600; margin-bottom: 5px;">@username</p>
                 <p id="profile-status" style="color: var(--text-muted); font-size: 14px; font-style: italic; margin-bottom: 10px;">...</p>
                 <p id="profile-online-status" style="font-size: 12px; margin-bottom: 15px; font-weight: 700; text-transform: uppercase;"></p>
                 <h4 style="text-align: left; width: 100%; margin-bottom: 5px;">О себе:</h4>
@@ -376,6 +377,15 @@
                     <button onclick="writeToProfile()" style="background: var(--primary-color); color: white; margin-bottom: 10px;">Написать</button>
                 </div>
             </div>
+            
+            <!-- Дополнительный блок для стиля "на фоне" -->
+            <div id="profile-bg-extra" style="display: none; padding: 20px;">
+                <p id="profile-username-bg" style="color: var(--text-muted); font-size: 14px; font-weight: 600; text-align: center; margin-bottom: 15px;">@username</p>
+                <h4 style="text-align: left; width: 100%; margin-bottom: 5px;">О себе:</h4>
+                <div id="profile-bio-bg" class="bio-text" style="background: var(--sidebar-hover); padding: 15px; border-radius: 12px; font-size: 14px; text-align: left; width: 100%; margin-bottom: 20px; max-height: 150px; overflow-y: auto;">...</div>
+                <div id="my-profile-actions-bg" class="hidden" style="width: 100%;"><button onclick="openEditModal()" style="background: #ff9800; color: white; width: 100%;">Редактировать профиль</button></div>
+                <div id="other-profile-actions-bg" class="hidden" style="width: 100%;"><button onclick="writeToProfile()" style="background: var(--primary-color); color: white; width: 100%;">Написать</button></div>
+            </div>
         </div>
     </div>
 
@@ -384,10 +394,14 @@
             <div class="auth-card">
                 <img src="/cadelylogo.jpg" alt="Cadely Logo" class="auth-logo" onerror="this.style.display='none'">
                 <div class="auth-title">Cadely</div>
-                <input type="text" id="username" placeholder="Имя">
-                <input type="password" id="password" placeholder="Пароль">
-                <button onclick="login()" style="background: var(--primary-color); color: white; margin-bottom: 12px;">Войти</button>
-                <button onclick="register()" style="background: #607d8b; color: white;">Зарегистрироваться</button>
+                <input type="text" id="reg-username" placeholder="@Юзернейм (для входа)">
+                <input type="text" id="reg-name" placeholder="Отображаемое имя">
+                <input type="password" id="reg-password" placeholder="Пароль">
+                <button onclick="register()" style="background: #607d8b; color: white; margin-bottom: 12px;">Зарегистрироваться</button>
+                <div style="border-top: 1px solid var(--border-color); margin: 15px 0;"></div>
+                <input type="text" id="login-username" placeholder="@Юзернейм">
+                <input type="password" id="login-password" placeholder="Пароль">
+                <button onclick="login()" style="background: var(--primary-color); color: white;">Войти</button>
                 <p id="auth-message" style="color: #f44336; margin-top: 15px; font-size: 14px;"></p>
             </div>
         </div>
@@ -396,7 +410,7 @@
             <div class="sidebar-header">
                 <h3>Cadely</h3>
                 <div style="display: flex; gap: 5px;">
-                    <button class="search-btn" onclick="openSearchModal()" title="Поиск">🔍</button>
+                    <button class="search-btn" onclick="openSearchModal()" title="Поиск по @юзернейму">🔍</button>
                     <button class="search-btn" onclick="openGroupModal()" title="Создать группу">➕</button>
                 </div>
             </div>
@@ -444,14 +458,14 @@
     </div>
         <script>
         const socket = io();
-        let currentUser = "";
+        let currentUser = ""; // Логин (username)
+        let myDisplayName = ""; // Имя для отображения
         let currentRoom = "general";
         let profileUser = "";
         let profileData = {};
         let tempAvatarPath = null;
         let reactionTargetMessageId = null;
         let replyTargetMessageId = null;
-        let editMsgTargetId = null;
         let onlineUsersList = [];
         let unreadCounts = {};
         let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
@@ -460,19 +474,10 @@
         let audioChunks = [];
         let isRecording = false;
 
-        // 1. КАСТОМНЫЙ СТАТУС (Через сервер - тут заглушка, работает как обычно)
-        // 2. ЦВЕТ ПУЗЫРЕЙ
         let myMsgColor = localStorage.getItem('msgColor') || '#e3f2fd';
         document.documentElement.style.setProperty('--my-msg-bg', myMsgColor);
-
-        // 3. СВАЙП ДЛЯ ОТВЕТА
         let touchStartX = 0;
-        let currentSwipeMsg = null;
-
-        // 4. ДВОЙНОЙ КЛИК
         let lastClickTime = 0;
-
-        // 5. ЗАКРЕПЛЕННЫЕ ЧАТЫ
         let pinnedChats = JSON.parse(localStorage.getItem('pinnedChats')) || [];
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -491,8 +496,6 @@
             osc.stop(audioCtx.currentTime + 0.1);
         }
 
-        if ("Notification" in window) { if (Notification.permission !== "granted" && Notification.permission !== "denied") Notification.requestPermission(); }
-
         function toggleSound() {
             soundEnabled = !soundEnabled;
             localStorage.setItem('soundEnabled', soundEnabled);
@@ -501,7 +504,7 @@
         document.addEventListener('DOMContentLoaded', () => { if(document.getElementById('sound-status')) document.getElementById('sound-status').innerText = soundEnabled ? 'Вкл' : 'Выкл'; });
 
         function openSettings() { 
-            document.getElementById('settings-name').innerText = currentUser;
+            document.getElementById('settings-name').innerText = myDisplayName || currentUser;
             document.getElementById('settings-page').classList.add('active'); 
         }
         function closeSettings() { document.getElementById('settings-page').classList.remove('active'); }
@@ -585,7 +588,6 @@
 
         socket.on('room list', (rooms) => {
             const chatList = document.getElementById('chat-list'); chatList.innerHTML = '';
-            // Сортировка: сначала закрепленные, потом general, потом остальные
             const sortedRooms = rooms.sort((a, b) => {
                 if (pinnedChats.includes(a) && !pinnedChats.includes(b)) return -1;
                 if (!pinnedChats.includes(a) && pinnedChats.includes(b)) return 1;
@@ -597,7 +599,7 @@
                 let displayName = ""; let targetUser = null; let isOnline = false; let isGroup = room.startsWith('group_');
                 if (room === 'general') { displayName = "Общий чат"; }
                 else if (isGroup) { displayName = "Группа"; socket.emit('get room name', room); }
-                else { const parts = room.split('_'); targetUser = parts.find(p => p !== currentUser); displayName = targetUser; isOnline = onlineUsersList.includes(targetUser); socket.emit('get profile', targetUser); }
+                else { const parts = room.split('_'); targetUser = parts.find(p => p !== currentUser); displayName = targetUser; isOnline = onlineUsersList.includes(targetUser); }
                 
                 const div = document.createElement('div'); div.className = 'chat-item'; div.id = 'chat-item-' + room;
                 if (room === currentRoom) div.classList.add('active');
@@ -608,7 +610,6 @@
                 if (isGroup) { dropdownItems = `<button class="danger" onclick="leaveGroup('${room}'); event.stopPropagation();">🚪 Выйти</button>`; }
                 else if (targetUser) { dropdownItems = `<button onclick="openProfile('${targetUser}'); event.stopPropagation();">👤 Профиль</button><button class="danger" onclick="hideChat('${room}'); event.stopPropagation();">🗑️ Удалить</button>`; }
                 
-                // Кнопка закрепа
                 const isPinned = pinnedChats.includes(room);
                 const pinBtn = room !== 'general' ? `<button onclick="togglePin('${room}'); event.stopPropagation();">${isPinned ? '📌 Открепить' : '📌 Закрепить'}</button>` : '';
                 dropdownItems += pinBtn;
@@ -646,8 +647,8 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('active'); }
         function openSearchModal() { document.getElementById('search-modal').classList.remove('hidden'); document.getElementById('search-input').focus(); }
         function closeSearchModal() { document.getElementById('search-modal').classList.add('hidden'); }
-        function searchUser() { const n = document.getElementById('search-input').value.trim(); if (!n) return alert("Введи имя!"); if (n === currentUser) return alert("Это вы!"); socket.emit('check user', n); }
-        socket.on('user not found', (u) => alert("Пользователь " + u + " не найден!"));
+        function searchUser() { const n = document.getElementById('search-input').value.trim(); if (!n) return alert("Введи @юзернейм!"); if (n === currentUser) return alert("Это вы!"); socket.emit('check user', n); }
+        socket.on('user not found', (u) => alert("Пользователь @" + u + " не найден!"));
         socket.on('user found', (f) => { closeSearchModal(); socket.emit('create private chat', { user: currentUser, friend: f }); });
         socket.on('private chat created', (r) => { switchRoom(r); socket.emit('get rooms', currentUser); if(window.innerWidth <= 600) toggleSidebar(); });
 
@@ -658,7 +659,14 @@
             currentRoom = room;
             if (unreadCounts[room]) { unreadCounts[room] = 0; const badge = document.getElementById('unread-' + room); if (badge) badge.classList.remove('active'); }
             if (room === 'general') { document.getElementById('room-title').innerText = "Общий чат"; }
-            else { const parts = room.split('_'); if (parts.length === 2 && !room.startsWith('group_')) { document.getElementById('room-title').innerText = parts.find(p => p !== currentUser); } else { socket.emit('get room name', room); } }
+            else { 
+                const parts = room.split('_'); 
+                if (parts.length === 2 && !room.startsWith('group_')) { 
+                    const target = parts.find(p => p !== currentUser);
+                    socket.emit('get profile', target); // Запросим профиль для названия
+                    document.getElementById('room-title').innerText = target; 
+                } else { socket.emit('get room name', room); } 
+            }
             socket.emit('join room', room); closeProfile(); cancelReply();
         }
 
@@ -721,7 +729,7 @@
             const chatBox = document.getElementById('chat-box'); const row = document.createElement('div'); row.className = 'message-row'; row.id = 'msg-' + msg.id;
             if (msg.user === currentUser) row.classList.add('own');
             let avatarHtml = msg.avatar ? `<img src="${msg.avatar}" class="msg-avatar" onclick="event.stopPropagation(); openProfile('${msg.user}')">` : `<div class="msg-avatar" onclick="event.stopPropagation(); openProfile('${msg.user}')">${msg.user.charAt(0).toUpperCase()}</div>`;
-            let authorHtml = msg.user !== currentUser ? `<div class="message-author" onclick="event.stopPropagation(); openProfile('${msg.user}')">${msg.user}</div>` : "";
+            let authorHtml = msg.user !== currentUser ? `<div class="message-author" onclick="event.stopPropagation(); openProfile('${msg.user}')">${msg.userDisplayName || msg.user}</div>` : "";
             let replyHtml = ""; if (msg.replyTo && msg.replyText) replyHtml = `<div class="reply-preview"><span class="reply-preview-author">${msg.replyUser}</span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${msg.replyText}</span></div>`;
             let contentHtml = ""; 
             if (msg.isMedia) { 
@@ -740,32 +748,24 @@
                 ontouchmove="handleTouchMove(event, '${msg.id}', '${msg.user}', '${msg.message ? msg.message.replace(/'/g, "\\'") : ''}')"
                 ontouchend="handleTouchEnd(event)">${replyHtml}${authorHtml}<div class="message-text" id="text-${msg.id}">${contentHtml}</div><span class="message-time">${editedMark}${timeString}</span></div>${reactionsHtml}</div>`;
             chatBox.appendChild(row); 
-            // Если пользователь внизу, скроллим вниз
             if (chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 300) chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // 3. СВАЙП ДЛЯ ОТВЕТА
         function handleTouchStart(e) { touchStartX = e.touches[0].clientX; }
         function handleTouchMove(e, msgId, msgUser, msgText) {
             if (!touchStartX) return;
             const diff = e.touches[0].clientX - touchStartX;
-            if (diff > 60) {
-                startReply(msgId, msgUser, msgText);
-                touchStartX = 0;
-            }
+            if (diff > 60) { startReply(msgId, msgUser, msgText); touchStartX = 0; }
         }
         function handleTouchEnd(e) { touchStartX = 0; }
 
-        // 5. ДВОЙНОЙ КЛИК ДЛЯ РЕАКЦИИ
         function handleMsgClick(e, msgId, msgUser, msgText, isMedia) {
             if (e.target.closest('.voice-player') || e.target.closest('.reaction-badge') || e.target.closest('a')) return;
             const now = Date.now();
             if (now - lastClickTime < 300) {
-                // Двойной клик
                 socket.emit('add reaction', { messageId: msgId, emoji: '❤️', user: currentUser });
                 lastClickTime = 0;
             } else {
-                // Одинарный клик
                 openActionSheet(msgId, msgUser, msgText, isMedia);
                 lastClickTime = now;
             }
@@ -798,57 +798,98 @@
         function saveEditMessage() { if (editMsgTargetId) { const nt = document.getElementById('edit-msg-input').value; socket.emit('edit message', { messageId: editMsgTargetId, newText: nt }); } closeEditMsgModal(); }
 
         function openGroupModal() { document.getElementById('user-select-list').innerHTML = ''; socket.emit('get all users'); document.getElementById('group-modal').classList.remove('hidden'); }
-        socket.on('all users list', (users) => { const list = document.getElementById('user-select-list'); list.innerHTML = ''; users.forEach(u => { if (u.username === currentUser) return; const div = document.createElement('div'); div.className = 'user-select-item'; div.innerHTML = `<input type="checkbox" value="${u.username}" id="chk-${u.username}"><label for="chk-${u.username}" style="cursor: pointer; flex: 1;">${u.username}</label>`; div.onclick = (e) => { if (e.target.tagName !== 'INPUT') { const chk = div.querySelector('input'); chk.checked = !chk.checked; } }; list.appendChild(div); }); });
+        socket.on('all users list', (users) => { const list = document.getElementById('user-select-list'); list.innerHTML = ''; users.forEach(u => { if (u.username === currentUser) return; const div = document.createElement('div'); div.className = 'user-select-item'; div.innerHTML = `<input type="checkbox" value="${u.username}" id="chk-${u.username}"><label for="chk-${u.username}" style="cursor: pointer; flex: 1;">${u.displayName || u.username} (@${u.username})</label>`; div.onclick = (e) => { if (e.target.tagName !== 'INPUT') { const chk = div.querySelector('input'); chk.checked = !chk.checked; } }; list.appendChild(div); }); });
         function closeGroupModal() { document.getElementById('group-modal').classList.add('hidden'); }
         function createGroup() { const name = document.getElementById('group-name').value.trim(); if (!name) return alert("Введи название!"); const checkboxes = document.querySelectorAll('#user-select-list input[type="checkbox"]:checked'); const members = Array.from(checkboxes).map(chk => chk.value); if (members.length === 0) return alert("Выбери участников!"); members.push(currentUser); socket.emit('create group', { groupName: name, members: members }); closeGroupModal(); alert("Группа создана!"); }
 
         function sendMedia() { const fileInput = document.getElementById('media-input'); const file = fileInput.files[0]; if (!file) return; if (file.size > 100 * 1024 * 1024) { alert("Файл слишком большой!"); fileInput.value = ""; return; } const formData = new FormData(); formData.append('media', file); document.querySelector('.attach-btn-inline').innerText = "⏳"; fetch('/upload-media', { method: 'POST', body: formData }).then(r => r.json()).then(data => { if (data.error) alert("Ошибка: " + data.error); else socket.emit('send media', { user: currentUser, room: currentRoom, url: data.path, type: data.type, caption: "", replyTo: replyTargetMessageId }); document.querySelector('.attach-btn-inline').innerText = "📎"; fileInput.value = ""; cancelReply(); }).catch(err => { alert("Ошибка!"); document.querySelector('.attach-btn-inline').innerText = "📎"; fileInput.value = ""; }); }
 
-        window.addEventListener('DOMContentLoaded', () => { const savedUser = localStorage.getItem('chat_user'); const savedPass = localStorage.getItem('chat_pass'); if (savedUser && savedPass) { document.getElementById('auth-message').innerText = "Авто-вход..."; socket.emit('login', { username: savedUser, password: savedPass }); } });
-        socket.on('auth success', (username) => { currentUser = username; document.getElementById('auth-block').classList.add('hidden'); document.getElementById('chat-block').classList.remove('hidden'); document.getElementById('sidebar').classList.remove('hidden'); socket.emit('join room', 'general'); socket.emit('get rooms', currentUser); socket.emit('get profile', username); });
+        window.addEventListener('DOMContentLoaded', () => { 
+            const savedUser = localStorage.getItem('chat_user'); const savedPass = localStorage.getItem('chat_pass'); 
+            if (savedUser && savedPass) { document.getElementById('auth-message').innerText = "Авто-вход..."; socket.emit('login', { username: savedUser, password: savedPass }); } 
+        });
+        
+        socket.on('auth success', (username) => { 
+            currentUser = username; 
+            document.getElementById('auth-block').classList.add('hidden'); 
+            document.getElementById('chat-block').classList.remove('hidden'); 
+            document.getElementById('sidebar').classList.remove('hidden'); 
+            socket.emit('join room', 'general'); 
+            socket.emit('get rooms', currentUser); 
+            socket.emit('get profile', username);
+        });
         socket.on('auth error', (msg) => { if (document.getElementById('auth-message').innerText === "Авто-вход...") { localStorage.removeItem('chat_user'); localStorage.removeItem('chat_pass'); document.getElementById('auth-message').innerText = "Ошибка авто-входа."; } else alert(msg); });
 
-        function login() { const u = document.getElementById('username').value.trim(); const p = document.getElementById('password').value; if (!u || !p) return alert("Заполни поля!"); socket.emit('login', { username: u, password: p }); localStorage.setItem('chat_user', u); localStorage.setItem('chat_pass', p); }
-        function register() { const u = document.getElementById('username').value.trim(); const p = document.getElementById('password').value; if (!u || !p) return alert("Заполни поля!"); socket.emit('register', { username: u, password: p }); localStorage.setItem('chat_user', u); localStorage.setItem('chat_pass', p); }
+        function login() { 
+            const u = document.getElementById('login-username').value.trim(); 
+            const p = document.getElementById('login-password').value; 
+            if (!u || !p) return alert("Заполни поля!"); 
+            socket.emit('login', { username: u, password: p }); 
+            localStorage.setItem('chat_user', u); localStorage.setItem('chat_pass', p); 
+        }
+        function register() { 
+            const u = document.getElementById('reg-username').value.trim(); 
+            const n = document.getElementById('reg-name').value.trim(); 
+            const p = document.getElementById('reg-password').value; 
+            if (!u || !p || !n) return alert("Заполни все поля!"); 
+            socket.emit('register', { username: u, displayName: n, password: p }); 
+            localStorage.setItem('chat_user', u); localStorage.setItem('chat_pass', p); 
+        }
         function logout() { localStorage.removeItem('chat_user'); localStorage.removeItem('chat_pass'); location.reload(); }
 
         function openProfile(user) { profileUser = user; socket.emit('get profile', user); }
         socket.on('profile data', (data) => {
             if (data.username === currentUser) {
-                document.getElementById('settings-name').innerText = data.username;
+                myDisplayName = data.displayName;
+                document.getElementById('settings-name').innerText = data.displayName;
                 document.getElementById('settings-status').innerText = data.status || 'Пользователь чата';
                 const bgImg = document.getElementById('settings-bg-img');
                 if (data.avatar) { bgImg.src = data.avatar; bgImg.style.display = 'block'; }
                 else { bgImg.style.display = 'none'; }
             }
-            const sa = document.getElementById(`avatar-sidebar-${data.username}`); if (sa) { if (data.avatar) sa.innerHTML = `<img src="${data.avatar}">`; else sa.innerText = data.username.charAt(0).toUpperCase(); }
+            const sa = document.getElementById(`avatar-sidebar-${data.username}`); if (sa) { if (data.avatar) sa.innerHTML = `<img src="${data.avatar}">`; else sa.innerText = data.displayName.charAt(0).toUpperCase(); }
+            
             if (profileUser === data.username) {
                 profileData = data; 
-                document.getElementById('profile-name').innerText = data.username;
+                document.getElementById('profile-name').innerText = data.displayName;
+                document.getElementById('profile-username').innerText = '@' + data.username;
                 document.getElementById('profile-status').innerText = data.status || 'Пользователь чата';
-                document.getElementById('profile-name-bg').innerText = data.username;
+                document.getElementById('profile-name-bg').innerText = data.displayName;
                 document.getElementById('profile-status-bg').innerText = data.status || 'Пользователь чата';
+                document.getElementById('profile-username-bg').innerText = '@' + data.username;
                 
                 const os = document.getElementById('profile-online-status');
                 if (onlineUsersList.includes(data.username)) { os.innerText = "В сети"; os.style.color = "#4CAF50"; }
                 else { os.innerText = "Был(а) недавно"; os.style.color = "#888"; }
-                const bd = document.getElementById('profile-bio'); bd.innerText = (data.bio && data.bio.trim() !== "") ? data.bio : "Пользователь пока ничего не рассказал о себе.";
-                const ad = document.getElementById('profile-avatar'); if (data.avatar) ad.innerHTML = `<img src="${data.avatar}" alt="avatar">`; else ad.innerText = data.username.charAt(0).toUpperCase();
                 
-                // Логика отображения стиля профиля
+                const bioText = (data.bio && data.bio.trim() !== "") ? data.bio : "Пользователь пока ничего не рассказал о себе.";
+                document.getElementById('profile-bio').innerText = bioText;
+                document.getElementById('profile-bio-bg').innerText = bioText;
+
+                const ad = document.getElementById('profile-avatar'); if (data.avatar) ad.innerHTML = `<img src="${data.avatar}" alt="avatar">`; else ad.innerText = data.displayName.charAt(0).toUpperCase();
+                
                 const bgContainer = document.getElementById('profile-bg-container');
                 const classicContainer = document.getElementById('profile-classic-container');
+                const bgExtra = document.getElementById('profile-bg-extra');
+
                 if (data.profileStyle === 'background' && data.avatar) {
                     bgContainer.style.display = 'block';
+                    bgExtra.style.display = 'block';
                     document.getElementById('profile-bg-image').src = data.avatar;
                     classicContainer.style.display = 'none';
                 } else {
                     bgContainer.style.display = 'none';
+                    bgExtra.style.display = 'none';
                     classicContainer.style.display = 'flex';
                 }
 
-                if (data.username === currentUser) { document.getElementById('my-profile-actions').classList.remove('hidden'); document.getElementById('other-profile-actions').classList.add('hidden'); }
-                else { document.getElementById('my-profile-actions').classList.add('hidden'); document.getElementById('other-profile-actions').classList.remove('hidden'); }
+                if (data.username === currentUser) { 
+                    document.getElementById('my-profile-actions').classList.remove('hidden'); document.getElementById('other-profile-actions').classList.add('hidden'); 
+                    document.getElementById('my-profile-actions-bg').classList.remove('hidden'); document.getElementById('other-profile-actions-bg').classList.add('hidden');
+                } else { 
+                    document.getElementById('my-profile-actions').classList.add('hidden'); document.getElementById('other-profile-actions').classList.remove('hidden'); 
+                    document.getElementById('my-profile-actions-bg').classList.add('hidden'); document.getElementById('other-profile-actions-bg').classList.remove('hidden');
+                }
                 document.getElementById('profile-panel').classList.remove('hidden');
             }
         });
@@ -856,25 +897,30 @@
         function writeToProfile() { if (!profileUser || profileUser === currentUser) return; socket.emit('create private chat', { user: currentUser, friend: profileUser }); closeProfile(); }
 
         function uploadAvatar() { const f = document.getElementById('avatar-input').files[0]; if (!f) return; const fd = new FormData(); fd.append('avatar', f); fetch('/upload-avatar', { method: 'POST', body: fd }).then(r => r.json()).then(d => { tempAvatarPath = d.path; document.getElementById('edit-avatar-preview').innerHTML = `<img src="${tempAvatarPath}" alt="avatar">`; }).catch(e => alert("Ошибка!")); }
+        
         function openEditModal() { 
-            document.getElementById('edit-name').value = profileUser; 
+            document.getElementById('edit-username').value = currentUser;
+            document.getElementById('edit-name').value = myDisplayName; 
             document.getElementById('edit-status').value = profileData.status || ""; 
             document.getElementById('edit-bio').value = profileData.bio || ""; 
             document.getElementById('edit-profile-style').value = profileData.profileStyle || 'classic';
             document.getElementById('edit-error').innerText = ""; tempAvatarPath = profileData.avatar; 
-            const p = document.getElementById('edit-avatar-preview'); if (profileData.avatar) p.innerHTML = `<img src="${profileData.avatar}" alt="avatar">`; else p.innerText = profileUser.charAt(0).toUpperCase(); 
+            const p = document.getElementById('edit-avatar-preview'); 
+            if (profileData.avatar) p.innerHTML = `<img src="${profileData.avatar}" alt="avatar">`; else p.innerText = myDisplayName.charAt(0).toUpperCase(); 
             document.getElementById('edit-modal').classList.remove('hidden'); 
         }
         function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+        
         function saveProfile() { 
+            const newU = document.getElementById('edit-username').value.trim();
             const n = document.getElementById('edit-name').value.trim(); 
             const s = document.getElementById('edit-status').value.trim(); 
             const b = document.getElementById('edit-bio').value.trim(); 
             const style = document.getElementById('edit-profile-style').value;
-            if (!n) return document.getElementById('edit-error').innerText = "Имя не может быть пустым!"; 
-            socket.emit('update profile', { oldUsername: currentUser, newUsername: n, status: s, bio: b, avatar: tempAvatarPath, profileStyle: style }); 
+            if (!n || !newU) return document.getElementById('edit-error').innerText = "Имя и юзернейм обязательны!"; 
+            socket.emit('update profile', { oldUsername: currentUser, newUsername: newU, displayName: n, status: s, bio: b, avatar: tempAvatarPath, profileStyle: style }); 
         }
-        socket.on('profile updated', (n) => { alert("Профиль обновлен! Новое имя: " + n); if (currentUser !== n) { currentUser = n; localStorage.setItem('chat_user', currentUser); } closeEditModal(); closeProfile(); closeSettings(); socket.emit('get rooms', currentUser); socket.emit('get profile', currentUser); });
+        socket.on('profile updated', (n) => { alert("Профиль обновлен! Новый юзернейм: " + n); if (currentUser !== n) { currentUser = n; localStorage.setItem('chat_user', currentUser); } closeEditModal(); closeProfile(); closeSettings(); socket.emit('get rooms', currentUser); socket.emit('get profile', currentUser); });
         socket.on('profile error', (m) => document.getElementById('edit-error').innerText = m);
 
         function showToast(title, text) { const c = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = `<b>${title}</b><span>${text}</span>`; t.onclick = () => t.remove(); c.appendChild(t); setTimeout(() => { if (t.parentNode) t.remove(); }, 5000); }
@@ -882,12 +928,8 @@
         let typingTimer;
         document.getElementById('textInput').addEventListener('input', () => { if (!currentUser) return; socket.emit('typing', { user: currentUser, room: currentRoom }); clearTimeout(typingTimer); typingTimer = setTimeout(() => { socket.emit('stop typing', { user: currentUser, room: currentRoom }); }, 1500); });
         
-        // 7. ОТПРАВКА ПО ENTER
         document.getElementById('textInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         });
 
         socket.on('user typing', (u) => document.getElementById('typing-status').innerText = u + " печатает...");
