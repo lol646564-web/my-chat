@@ -19,6 +19,7 @@ const UserSchema = new mongoose.Schema({
     status: { type: String, default: "Пользователь чата" },
     bio: { type: String, default: "" },
     avatar: { type: String, default: null },
+    profileStyle: { type: String, default: "classic" }, // Стиль профиля
     lastSeen: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', UserSchema);
@@ -154,14 +155,18 @@ io.on('connection', (socket) => {
         const user = await User.findOne({ username });
         if (!user) return socket.emit('profile error', 'Пользователь не найден');
         socket.emit('profile data', { 
-            username: user.username, status: user.status, bio: user.bio, avatar: user.avatar, lastSeen: user.lastSeen, isOnline: onlineUsers.has(username)
+            username: user.username, status: user.status, bio: user.bio, avatar: user.avatar, 
+            profileStyle: user.profileStyle,
+            lastSeen: user.lastSeen, isOnline: onlineUsers.has(username)
         });
     });
 
     socket.on('update profile', async (data) => {
-        const { oldUsername, newUsername, status, bio, avatar } = data;
+        const { oldUsername, newUsername, status, bio, avatar, profileStyle } = data;
         if (newUsername !== oldUsername && await User.findOne({ username: newUsername })) return socket.emit('profile error', 'Имя занято!');
-        await User.updateOne({ username: oldUsername }, { username: newUsername, status, bio, avatar });
+        
+        await User.updateOne({ username: oldUsername }, { username: newUsername, status, bio, avatar, profileStyle });
+        
         if (newUsername !== oldUsername) {
             await Message.updateMany({ user: oldUsername }, { user: newUsername });
             await Message.updateMany({ replyUser: oldUsername }, { replyUser: newUsername });
@@ -233,7 +238,6 @@ io.on('connection', (socket) => {
         const msg = new Message({ id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), user: data.user, message: data.message, room: data.room, avatar: user ? user.avatar : null, isMedia: false, replyTo: data.replyTo || null, replyText, replyUser });
         await msg.save();
         
-        // Обновляем превью группы
         if (data.room.startsWith('group_')) {
             await Group.updateOne({ id: data.room }, { lastMessage: data.message });
         }
@@ -281,6 +285,7 @@ io.on('connection', (socket) => {
     socket.on('typing', (data) => socket.to(data.room).emit('user typing', data.user));
     socket.on('stop typing', (data) => socket.to(data.room).emit('user stop typing', data.user));
 
+    // --- ЗВОНКИ ---
     socket.on('call user', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('incoming call', { from: data.from, offer: data.offer }); else socket.emit('call error', 'Пользователь не в сети'); });
     socket.on('answer call', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('call answered', { answer: data.answer }); });
     socket.on('end call', (data) => { const t = activeCalls[data.to]; if (t) io.to(t).emit('call ended'); });
